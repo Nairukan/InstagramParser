@@ -1,13 +1,16 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(InstagramParser LANGUAGES CXX)
+project(Wlad_Parse2 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(InstagramParser main.cpp
-)
 
+find_package(CURL REQUIRED)
+include_directories(${CURL_INCLUDE_DIR})
 
-install(TARGETS InstagramParser
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+add_executable(Wlad_Parse2 main.cpp parser.cpp parser.h request.cpp request.h)
+
+target_link_libraries(Wlad_Parse2 ${CURL_LIBRARIES})
+#install(TARGETS Wlad_Parse2
+#    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
