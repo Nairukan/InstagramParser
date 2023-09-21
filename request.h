@@ -10,14 +10,27 @@
 using std::map;
 using std::string;
 using std::stringstream;
+using std::pair;
+
+
 
 class Request
 {
 public:
     string URL;
+    Request(CURL* , string ,
+            map<string, string>& ,
+            map<string, string>& , stringstream* =nullptr, bool =false); //Curl Handle, Url, headers map, cookies map, body(optional), isPost(optional)
+
     Request(CURL* handle, string URL,
-            map<string, string> headers,
+            curl_slist* headers,
             map<string, string> cookies);
+
+    static size_t header_write(char *ptr, size_t size, size_t nmemb,
+                    pair<map<string, string>&, map<string, string>& > &metadata);
+
+
+    static size_t string_write(char *ptr, size_t size, size_t nmemb, string &str);
 
 };
 
