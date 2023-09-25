@@ -4,12 +4,12 @@
 #include <thread>
 #include <mutex>
 #include <bits/stdc++.h>
-//#include "instagramparser.h"
 #include "request.h"
 #include "instagramutils.h"
 #include <format>
 
 //#define DEBUG 1
+
 
 
 
@@ -71,7 +71,6 @@ const string formatData(time_t t, bool isShort=false) {
 // <worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:mx=\"http://schemas.microsoft.com/office/mac/excel/2008/main\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" xmlns:mv=\"urn:schemas-microsoft-com:mac:vml\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\" xmlns:x15=\"http://schemas.microsoft.com/office/spreadsheetml/2010/11/main\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\"><sheetPr><outlinePr summaryBelow=\"0\" summaryRight=\"0\"/></sheetPr><sheetViews><sheetView workbookViewId=\"0\"/></sheetViews><sheetFormatPr customHeight=\"1\" defaultColWidth=\"12.63\" defaultRowHeight=\"15.75\"/>";
 
 int main(int argc, char** argv){
-
     //************ Is Normal Settings of Parser ************//
     if (!filesystem::is_directory("./temp")) filesystem::create_directory("temp");
     if (!filesystem::is_directory("./result")) filesystem::create_directory("result");
@@ -144,6 +143,8 @@ int main(int argc, char** argv){
     headers["X-Requested-With"]="XMLHttpRequest";
     Request(handle, "https://www.instagram.com/api/v1/web/accounts/login/ajax/", headers, cookies, buffer, true);
     headers["X-CSRFToken"]=cookies["csrftoken"];
+    if (cookies["sessionid"]=="" || cookies["sessionid"]==" ") cout << "!!! Not Authorizated !!!\n\n";
+    else cout << "Good Authorizated :)\n\n";
 #ifdef DEBUG
     ofstream authorization("authorization.log");
     authorization << "\n\n" << buffer->str();
@@ -176,7 +177,7 @@ int main(int argc, char** argv){
         part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
         part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
         headers["X-CSRFToken"]=cookies["csrftoken"];
-        *buffer=stringstream("target_user_id="+id+"&page_size=100&include_feed_video=true");
+        *buffer=stringstream("target_user_id="+id+"&page_size=50&include_feed_video=true");
         Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true);
 
         vector<vector<string>> answer;
@@ -189,7 +190,7 @@ int main(int argc, char** argv){
             part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
             part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
             headers["X-CSRFToken"]=cookies["csrftoken"];
-            *buffer=stringstream("target_user_id="+id+"&page_size=100&max_id="+max_id+"&include_feed_video=true");
+            *buffer=stringstream("target_user_id="+id+"&page_size=50&max_id="+max_id+"&include_feed_video=true");
             Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true);
             vector<vector<std::string>> t_answer;
             if (!InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, t_answer)){

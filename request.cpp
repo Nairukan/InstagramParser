@@ -138,20 +138,28 @@ Request::Request(CURL* handle, string URL,
     if (!responce->str().empty() && isPost){
         curl_easy_setopt(handle, CURLOPT_POSTFIELDS, data);
     }
-
+    curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, Request_count_max_ms);
     int res=curl_easy_perform(handle);
+
     curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res);
+    if (res!=200){
+        std::cout << res << " Repeat Request\n";
+        Request(handle, URL, MapHeaders, MapCookies, responce, isPost);
+        return;
+    }
 #ifdef DEBUG
     std::cout << res << "\n";
 #endif
     if (res==0){
         //Request(handle, URL, MapHeaders, MapCookies, responce, isPost);
     }
-    /*
+#ifdef DEBUG
+    std::cout << "Answer Headers:\n";
     for (auto &h : metadata.first) {
         std::cout << h.first << ": " << h.second << "\n";
     }
-    */
+    std::cout << "\n";
+#endif
     int headers_size;
     curl_easy_getinfo(handle, CURLINFO_HEADER_SIZE, &headers_size);
     if(responce!=nullptr) *responce=stringstream(str);//.substr(headers_size));

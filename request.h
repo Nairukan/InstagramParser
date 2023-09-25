@@ -13,6 +13,7 @@ using std::stringstream;
 using std::pair;
 
 
+static uint Request_count_max_ms=5000;
 
 class Request
 {

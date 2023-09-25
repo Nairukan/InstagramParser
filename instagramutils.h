@@ -131,8 +131,15 @@ public:
 
 
     static bool ProcessingResponceOfParsing(std::stringstream* buffer, const time_t& startT, const time_t& endT, string& maxid, std::vector<std::vector<string>>& answer){
-        json data = json::parse(*buffer);
-        if (data["status"]!="ok") return false;
+
+        json data;
+        try{
+            data= json::parse(*buffer);
+            if (data["status"]!="ok") return false;
+        }catch(...){
+            return false;
+        }
+
         try{
             time_t end_post_time=time(0);
             vector<vector<string>> vect;
