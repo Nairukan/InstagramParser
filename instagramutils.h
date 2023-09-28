@@ -130,14 +130,15 @@ public:
     }
 
 
-    static bool ProcessingResponceOfParsing(std::stringstream* buffer, const time_t& startT, const time_t& endT, string& maxid, std::vector<std::vector<string>>& answer){
+    static uint ProcessingResponceOfParsing(std::stringstream* buffer, const time_t& startT, const time_t& endT, string& maxid, std::vector<std::vector<string>>& answer){
 
         json data;
         try{
             data= json::parse(*buffer);
             if (data["status"]!="ok") return false;
         }catch(...){
-            return false;
+            std::cout << "status no ok\n";
+            return 1;
         }
 
         try{
@@ -191,8 +192,10 @@ public:
             //std::cout << formatData((time_t)(*dat.begin())["media"]["taken_at"]) << " " << formatData((time_t)(*dat.rbegin())["media"]["taken_at"]) << "\n";
             std::cout << coun << " = count in reponce; " << count << " = count of parsing\n";
             answer=vect;
-            return true;
+            return 2;
         }catch(...){
+
+            std::cout << "unknown error\n";
             return false;
         }
     }
