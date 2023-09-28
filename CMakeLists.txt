@@ -11,6 +11,7 @@ find_package(CURL REQUIRED)
 include_directories(${CURL_INCLUDE_DIR})
 
 add_executable(InstagramParser main.cpp request.cpp request.h instagramutils.h
+    exelwork.h
 )
 
 target_link_libraries(InstagramParser ${CURL_LIBRARIES})

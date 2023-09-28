@@ -7,6 +7,7 @@
 #include "request.h"
 #include "instagramutils.h"
 #include <format>
+#include "exelwork.h"
 
 //#define DEBUG 1
 
@@ -14,6 +15,7 @@
 
 
 using namespace std;
+using request::Request;
 
 string int_to_str(unsigned long long num){
     string ans="";
@@ -71,9 +73,18 @@ const string formatData(time_t t, bool isShort=false) {
 // <worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:mx=\"http://schemas.microsoft.com/office/mac/excel/2008/main\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" xmlns:mv=\"urn:schemas-microsoft-com:mac:vml\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\" xmlns:x15=\"http://schemas.microsoft.com/office/spreadsheetml/2010/11/main\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\"><sheetPr><outlinePr summaryBelow=\"0\" summaryRight=\"0\"/></sheetPr><sheetViews><sheetView workbookViewId=\"0\"/></sheetViews><sheetFormatPr customHeight=\"1\" defaultColWidth=\"12.63\" defaultRowHeight=\"15.75\"/>";
 
 int main(int argc, char** argv){
+
+    /*
+    cout << format("argc: {}\nargv:\n", argc);
+    for (int i=0; i<argc; i++) cout << format("{}. {}\n", i, argv[i]);
+    return 0;
+    */
+
     //************ Is Normal Settings of Parser ************//
     if (!filesystem::is_directory("./temp")) filesystem::create_directory("temp");
     if (!filesystem::is_directory("./result")) filesystem::create_directory("result");
+    if (!filesystem::is_directory("./result/xlsx_s")) filesystem::create_directory("result/xlsx_s");
+    if (!filesystem::is_directory("./result/csv_s")) filesystem::create_directory("result/csv_s");
     if (!filesystem::exists("parsing_acc.txt") || filesystem::is_empty("parsing_acc.txt")){
         ofstream("parsing_acc.txt") << "<1 in row Account for parsing>";
         throw("Error with Setting of Parser(file \"parsing_acc.txt\" must contain list of parsing accounts)\n");
@@ -82,6 +93,7 @@ int main(int argc, char** argv){
         (ofstream("Init.ini")) << "<Username ParserAcc> <Password ParserAcc> <ID ParserAcc>";
         throw("Error with Setting of Parser(file \"Init.ini\" must contain login info about [Parser account])\n");
     }
+    //request::Request_count_max_ms=8000;
 
     //************ Read Settings for Parsing ************//
     ifstream Parsing_Acc("Init.ini");
@@ -107,8 +119,11 @@ int main(int argc, char** argv){
     cout << "Enter end date in format \"DD.MM.YYYY\":\n";
     cin >> Date;
     Date_t_stop=GetUnixTime(Date, true);
+#ifdef DEBUG
     cout << Date_t_start << " " << Date_t_stop << "\n";
-    string dirpath="result/ParsingProtocol_start"+formatData(Date_t_start)+"_end"+formatData(Date_t_stop);
+#endif
+    const string name=format("ParsingProtocol_start{}_end{}", formatData(Date_t_start), formatData(Date_t_stop));
+    string dirpath="result/csv_s/"+name;
     if (!filesystem::is_directory(dirpath)) filesystem::create_directory(dirpath);
 
     curl_global_init(CURL_GLOBAL_ALL);
@@ -157,46 +172,59 @@ int main(int argc, char** argv){
 
     for (auto now: username){
         cout << now << ":\n";
-        part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
-        part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
-        headers["X-CSRFToken"]=cookies["csrftoken"];
-        *buffer=stringstream();
-        Request(handle, "https://www.instagram.com/api/v1/users/web_profile_info/?username="+now, headers, cookies, buffer, false);
-#ifdef DEBUG
-        ofstream get_id("get_id.log");
-        get_id << "\n\n" << buffer->str();
-        get_id.close();
-#endif
-        string id;
-        if (!InstagramUtils::ExtractId_ParsingAcc(buffer, id)){
-            cout << now << " - error get_id. Skiped...\n";
-            break;
-        }
-        time_t startT=Date_t_start, endT=Date_t_stop;
+        uint res=0;
         string max_id="";
-        part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
-        part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
-        headers["X-CSRFToken"]=cookies["csrftoken"];
-        *buffer=stringstream("target_user_id="+id+"&page_size=50&include_feed_video=true");
-        Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true);
-
+        time_t startT=Date_t_start, endT=Date_t_stop;
         vector<vector<string>> answer;
-        if (!InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, answer)){
-            cout << now << " - error parsing reels. Skiped...\n";
-            continue;
-        }
-        while(max_id!=""){
-            cout << "Download more Reels....\n";
+        string id;
+        while(res < 2){
             part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
             part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
             headers["X-CSRFToken"]=cookies["csrftoken"];
-            *buffer=stringstream("target_user_id="+id+"&page_size=50&max_id="+max_id+"&include_feed_video=true");
+            *buffer=stringstream();
+            Request(handle, "https://www.instagram.com/api/v1/users/web_profile_info/?username="+now, headers, cookies, buffer, false);
+    #ifdef DEBUG
+            ofstream get_id("get_id.log");
+            get_id << "\n\n" << buffer->str();
+            get_id.close();
+    #endif
+            if (!InstagramUtils::ExtractId_ParsingAcc(buffer, id)){
+                cout << now << " - error get_id. Skiped...\n";
+                break;
+            }
+
+            part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
+            part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
+            headers["X-CSRFToken"]=cookies["csrftoken"];
+            *buffer=stringstream("target_user_id="+id+"&page_size=100&include_feed_video=true");
             Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true);
-            vector<vector<std::string>> t_answer;
-            if (!InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, t_answer)){
+
+
+            if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, answer); !res){
                 cout << now << " - error parsing reels. Skiped...\n";
                 break;
             }
+            else if (res==1){
+                cout << "Repeat download...\n";
+                continue;
+            }
+        }
+        while(max_id!="" && res){
+            if (res!=1) cout << "Download more Reels....\n";
+            else cout << "Repeat download...\n";
+            part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
+            part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
+            headers["X-CSRFToken"]=cookies["csrftoken"];
+            *buffer=stringstream("target_user_id="+id+"&page_size=100&max_id="+max_id+"&include_feed_video=true");
+            Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true);
+            vector<vector<std::string>> t_answer;
+            if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, t_answer); !res){
+                cout << now << " - error parsing reels. Skiped...\n";
+                break;
+            }else if(res==1){
+                continue;
+            }
+
             auto v=t_answer;
             answer.insert(answer.end(), v.begin(), v.end());
         }
@@ -237,6 +265,18 @@ int main(int argc, char** argv){
     cout << "Resources Cleanig\n";
     curl_global_cleanup();
     delete buffer;
+
+    cout << "StartExel\n";
+    for (int i=0; i<username.size(); i++) username[i]=dirpath+"/"+username[i]+".csv";
+    ExelFile* result=ExelFile::read_CSVs(username);
+    for (auto now : result->SheetNames){
+        cout << format("{} - {} reels\n", now.first, (*result)[now.first].heigth()-2);
+    }
+    result->make_XLXS("result/xlsx_s/"+name);
+    system(format("cd result/xlsx_s/{0} ; zip -rqm {0}.xlsx * ; cd ../../../", name).c_str());
+
+    cout << format("result of Parsing located in result/xlsx_s/{0}/{0}.xlsx\n", name);
+    delete result;
 }
 
 
