@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 11.0.2, 2023-09-28T00:32:49. -->
+<!-- Written by QtCreator 11.0.2, 2023-09-28T22:41:44. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -104,7 +104,7 @@
 -DCMAKE_CXX_FLAGS_INIT:STRING=%{Qt:QML_DEBUG_FLAG}
 </value>
     <value type="QString" key="CMake.Source.Directory">/home/nikita/QtProj/InstagramParser</value>
-    <value type="int" key="EnableQmlDebugging">0</value>
+    <value type="int" key="EnableQmlDebugging">1</value>
     <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">/home/nikita/QtProj/build-InstagramParser-Desktop-Debug</value>
     <valuemap type="QVariantMap" key="ProjectExplorer.BuildConfiguration.BuildStepList.0">
      <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.0">
@@ -173,9 +173,11 @@
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">InstagramParser</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.InstagramParser</value>
     <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">InstagramParser</value>
-    <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>
+    <value type="int" key="RunConfiguration.UseCppDebugger">0</value>
+    <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">false</value>
     <value type="bool" key="RunConfiguration.UseLibrarySearchPath">true</value>
-    <value type="bool" key="RunConfiguration.UseQmlDebuggerAuto">true</value>
+    <value type="int" key="RunConfiguration.UseQmlDebugger">1</value>
+    <value type="bool" key="RunConfiguration.UseQmlDebuggerAuto">false</value>
     <value type="bool" key="RunConfiguration.UseTerminal">true</value>
     <value type="QString" key="RunConfiguration.WorkingDirectory.default">/home/nikita/QtProj/build-InstagramParser-Desktop-Debug</value>
    </valuemap>

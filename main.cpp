@@ -130,7 +130,7 @@ int main(int argc, char** argv){
     //Headers
     map<string, string> headers({
         {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0"},
-        {"X-Instagram-AJAX", "1008126642"}
+        //{"X-Instagram-AJAX", "1008126642"} //1008917085 7 строка
     });
     map<string, string> cookies({});
     CURL* handle=curl_easy_init();
@@ -139,7 +139,7 @@ int main(int argc, char** argv){
     stringstream* buffer = new stringstream;
 
 //Tokens begin
-    Request(handle, "https://www.instagram.com/", headers, cookies, buffer, true);
+    Request(handle, "https://www.instagram.com/", headers, cookies, buffer, true).exec();
 #ifdef DEBUG
     ofstream tokens("tokens.log");
     tokens << "\n\n" << buffer->str();
@@ -156,7 +156,7 @@ int main(int argc, char** argv){
     part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
     headers["Content-Type"]="application/x-www-form-urlencoded";
     headers["X-Requested-With"]="XMLHttpRequest";
-    Request(handle, "https://www.instagram.com/api/v1/web/accounts/login/ajax/", headers, cookies, buffer, true);
+    Request(handle, "https://www.instagram.com/api/v1/web/accounts/login/ajax/", headers, cookies, buffer, true).exec();
     headers["X-CSRFToken"]=cookies["csrftoken"];
     if (cookies["sessionid"]=="" || cookies["sessionid"]==" ") cout << "!!! Not Authorizated !!!\n\n";
     else cout << "Good Authorizated :)\n\n";
@@ -177,29 +177,32 @@ int main(int argc, char** argv){
         time_t startT=Date_t_start, endT=Date_t_stop;
         vector<vector<string>> answer;
         string id;
+        part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
+        part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
+        headers["X-CSRFToken"]=cookies["csrftoken"];
+        *buffer=stringstream();
+        Request(handle, "https://www.instagram.com/api/v1/users/web_profile_info/?username="+now, headers, cookies, buffer, false).exec();
+#ifdef DEBUG
+        ofstream get_id("get_id.log");
+        get_id << "\n\n" << buffer->str();
+        get_id.close();
+#endif
+        if (!InstagramUtils::ExtractId_ParsingAcc(buffer, id)){
+            cout << now << " - error get_id. Skiped...\n";
+            continue;
+        }
         while(res < 2){
-            part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
-            part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
-            headers["X-CSRFToken"]=cookies["csrftoken"];
-            *buffer=stringstream();
-            Request(handle, "https://www.instagram.com/api/v1/users/web_profile_info/?username="+now, headers, cookies, buffer, false);
-    #ifdef DEBUG
-            ofstream get_id("get_id.log");
-            get_id << "\n\n" << buffer->str();
-            get_id.close();
-    #endif
-            if (!InstagramUtils::ExtractId_ParsingAcc(buffer, id)){
-                cout << now << " - error get_id. Skiped...\n";
-                break;
-            }
+
 
             part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
             part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
             headers["X-CSRFToken"]=cookies["csrftoken"];
             *buffer=stringstream("target_user_id="+id+"&page_size=100&include_feed_video=true");
-            Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true);
-
-
+            Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true).exec();
+//#ifdef DEBUG
+            ofstream Reels("Reels.log");
+            Reels << "\n\n" << buffer->str();
+//#endif
             if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, answer); !res){
                 cout << now << " - error parsing reels. Skiped...\n";
                 break;
@@ -216,7 +219,7 @@ int main(int argc, char** argv){
             part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
             headers["X-CSRFToken"]=cookies["csrftoken"];
             *buffer=stringstream("target_user_id="+id+"&page_size=100&max_id="+max_id+"&include_feed_video=true");
-            Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true);
+            Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true).exec();
             vector<vector<std::string>> t_answer;
             if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, t_answer); !res){
                 cout << now << " - error parsing reels. Skiped...\n";
@@ -256,7 +259,7 @@ int main(int argc, char** argv){
     *buffer=stringstream(format("one_tap_app_login=0&user_id={}", cookies["ds_user_id"]));
     cout << "Logout\n";
     if (cookies["sessionid"]=="" || cookies["sessionid"]=="\"\"") cout << "Logout not required\n";
-    else Request(handle, "https://www.instagram.com/api/v1/web/accounts/logout/ajax/", headers, cookies, buffer, true);
+    else Request(handle, "https://www.instagram.com/api/v1/web/accounts/logout/ajax/", headers, cookies, buffer, true).exec();
 #ifdef DEBUG
     ofstream logout("logout.log");
     logout << "\n\n" << buffer->str();

@@ -24,16 +24,25 @@ namespace request{
                 map<string, string>& ,
                 map<string, string>& , stringstream* =nullptr, bool =false); //Curl Handle, Url, headers map, cookies map, body(optional), isPost(optional)
 
-        Request(CURL* handle, string URL,
-                curl_slist* headers,
-                map<string, string> cookies);
+        Request& exec(map<string, string>&, map<string, string>& );
+        Request& exec();
+
+        const stringstream* result();
 
         static size_t header_write(char *ptr, size_t size, size_t nmemb,
                         pair<map<string, string>&, map<string, string>& > &metadata);
 
 
         static size_t string_write(char *ptr, size_t size, size_t nmemb, string &str);
-
+    private:
+        CURL* handle;
+        stringstream* responce = nullptr;
+        string str;
+        curl_slist* headers = NULL;
+        std::pair<map<string, string>&, map<string, string>&> metadata;
+        bool isPost;
+        const char* data;
+        string some;
     };
 
 }

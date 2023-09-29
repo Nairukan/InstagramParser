@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iostream>
 #include <map>
+#include <format>
 #include "nlohmann/json.hpp"
 
 
@@ -19,18 +20,43 @@ class InstagramUtils
 public:
     InstagramUtils() = delete;
 
-    static bool ExtractPrimeTokens(stringstream *buffer, std::map<std::string, std::string>& cookie){
+    static bool ExtractPrimeTokens(stringstream *buffer, std::map<std::string, std::string>& headers){
         std::string temp;
         int count = 0;
-        for (int i=0; !buffer->eof() && count!=2; i++){
+        for (int i=0; !buffer->eof() && count!=3; i++){
 #ifdef DEBUG
             std::cout << i << "\n";
 #endif
             std::getline((*buffer), temp);
             int k;
             if (!temp.length()) continue;
-            std::string finding="\"define\"";
+
+            //find X-Instagram-AJAX
+            std::string finding="\"consistency\":{\"rev\":";
             int len=(std::string(finding)).length();
+            if ((headers["X-Instagram-AJAX"]=="" || headers["X-Instagram-AJAX"]==" ")){
+                for (k=0; k<temp.length()-len; k++){
+                    if (temp.substr(k, len) == finding) break;
+                }
+                if (k!=temp.length()-len){
+                    int s=k+len;
+                    finding="}";
+                    len=(std::string(finding)).length();
+                    for (k; k<temp.length()-len; k++){
+                        if (temp.substr(k, len) == finding) break;
+                    }
+                    headers["X-Instagram-AJAX"]=temp.substr(s, k-s);
+#ifdef DEBUG
+                    std::cout << "X-Instagram-AJAX -- FOUND\n";
+#endif
+                    ++count;
+                    continue;
+                }
+            }
+
+            //find XIGSharedData && csrf_token
+            finding="\"define\"";
+            len=(std::string(finding)).length();
             //if (temp.length()-len<0)
             for (k=0; k<temp.length()-len; k++){
                 if (temp.substr(k, len) == finding) break;
@@ -47,32 +73,43 @@ public:
             *buffer=std::stringstream("{"+temp.substr(s, k-s-1)+"}");
             json data = json::parse(*buffer);
             for (auto b = data.begin(); b!=data.end() && count!=2; ++b){
-                for (auto now = (*b).begin(); now!=(*b).end() && count!=2; ++now)
+                for (auto now = (*b).begin(); now!=(*b).end() && count!=3; ++now)
                     if ((*now)[0]=="XIGSharedData"){
-                        //extract csrf_token
-                        std::stringstream ss; ss << (*now)[2];
-                        std::string inter = ss.str();
-                        int k;
-                        std::string finding="\"raw\"";
-                        int len=(std::string(finding)).length();
-                        for (k=0; k<inter.length()-len; k++){
-                            if (inter.substr(k, len) == finding) break;
+
+                        if ((headers["X-CSRFToken"]=="" || headers["X-CSRFToken"]==" ")){
+                            //extract csrf_token
+                            std::stringstream ss; ss << (*now)[2];
+                            std::string inter = ss.str();
+                            int k;
+                            std::string finding="\"raw\"";
+                            int len=(std::string(finding)).length();
+                            for (k=0; k<inter.length()-len; k++){
+                                if (inter.substr(k, len) == finding) break;
+                            }
+                            finding="\"csrf_token\\\":\\\"";
+                            len=(std::string(finding)).length();
+                            for (k=0; k<inter.length()-len; k++){
+                                if (inter.substr(k, len) == finding) break;
+                            }
+                            int s=k+len;
+                            finding="\",\\\"viewer\\\"";
+                            len=(std::string(finding)).length();
+                            for (k; k<inter.length()-len; k++){
+                                if (inter.substr(k, len) == finding) break;
+                            }
+                            inter=inter.substr(s, k-s-1);
+                            headers["X-CSRFToken"] = inter;
+#ifdef DEBUG
+                            std::cout << "X-CSRFToken -- FOUND\n";
+#endif
+                            ++count;
                         }
-                        finding="\"csrf_token\\\":\\\"";
-                        len=(std::string(finding)).length();
-                        for (k=0; k<inter.length()-len; k++){
-                            if (inter.substr(k, len) == finding) break;
+#ifdef DEBUG
+                        else{
+                            std::cout << std::format("Extract CSRF skipped - couse of headers[\"X-CSRFToken\"]=\"{}\"\n", headers["X-CSRFToken"]);
                         }
-                        int s=k+len;
-                        finding="\",\\\"viewer\\\"";
-                        len=(std::string(finding)).length();
-                        for (k; k<inter.length()-len; k++){
-                            if (inter.substr(k, len) == finding) break;
-                        }
-                        inter=inter.substr(s, k-s-1);
-                        cookie["X-CSRFToken"] = inter;
-                        count++;
-                    }else if ((*now)[0]=="RelayAPIConfigDefaults"){
+#endif
+                    }else if ((headers["X_IG_App_ID"]=="" || headers["X_IG_App_ID"]==" ") && (*now)[0]=="RelayAPIConfigDefaults"){
                         //extract X-IG-App-ID
                         std::stringstream ss; ss << (*now)[2];
                         std::string inter = ss.str();
@@ -89,8 +126,11 @@ public:
                             if (inter.substr(k, len) == finding) break;
                         }
                         inter=inter.substr(s, k-s-1);
-                        cookie["X_IG_App_ID"] = inter;
-                        count++;
+                        headers["X_IG_App_ID"] = inter;
+#ifdef DEBUG
+                        std::cout << "X_IG_App_ID -- FOUND\n";
+#endif
+                        ++count;
                     }
             }
         }
@@ -137,7 +177,7 @@ public:
             data= json::parse(*buffer);
             if (data["status"]!="ok") return false;
         }catch(...){
-            std::cout << "status no ok\n";
+            std::cout << "error of parsing responce\n";
             return 1;
         }
 
