@@ -174,7 +174,7 @@ namespace request{
     Request& Request::exec(){
 #ifdef DEBUG
         //curl_easy_setopt(handle, CURLOPT_URL, URL.c_str());
-        std::cout << format("URL: {}\nBODY: {}\n", URL, str);
+        std::cout << format("URL: {}\nBODY: {}\n", URL, responce->str());
         std::cout << "Headers:\n";
         auto temp=headers;
         while (temp){
@@ -189,9 +189,9 @@ namespace request{
         double secs;
         curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res);
         curl_easy_getinfo(handle, CURLINFO_TOTAL_TIME, &secs);
-        std::cout << "Time " << secs << "-s\n";
+        //std::cout << "Time " << secs << "-s\n";
         if (res!=200 || Request_count_max_ms-secs*1000<Request_count_max_ms*0.05){
-            std::cout << res << " Repeat Request\n";
+            //std::cout << res << " Repeat Request\n";
             if (res==502){
                 std::cout << format("URL: {}\nBODY: {}\n", URL, responce->str());
                 throw "502";
@@ -217,3 +217,5 @@ namespace request{
 
     const stringstream* Request::result(){return responce;}
 }
+
+//32 байта в пинг = 66мс

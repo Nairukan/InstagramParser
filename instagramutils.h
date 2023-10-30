@@ -169,8 +169,19 @@ public:
         return ans;
     }
 
+    static inline string uint_to_str(uint num){
+        string answer="";
+        if (!num) return "0";
+        while(num){
+            answer=char(num%10+'0')+answer;
+            num/=10;
+        }
+        return answer;
+    }
 
-    static uint ProcessingResponceOfParsing(std::stringstream* buffer, const time_t& startT, const time_t& endT, string& maxid, std::vector<std::vector<string>>& answer){
+    static std::string _fmt;
+
+    static uint ProcessingResponceOfParsing(std::stringstream* buffer, const time_t& startT, const time_t& endT, string& maxid, std::vector<std::vector<string>>& answer, uint& counter, string& _fmt){
 
         json data;
         try{
@@ -191,9 +202,31 @@ public:
             int coun=0;
             bool end=false;
             time_t t;
+            std::cout << data["num_results"] << "\n";
             auto media=dat.begin();
+
             for (; media!=dat.end(); media++){
+#ifdef Reels
                 t=(time_t)(*media)["media"]["taken_at"];
+#elif Posts
+                t=(time_t)(*media)["taken_at"];
+                std::cout << std::format("t={} endT={}\n", InstagramUtils::formatData(t), InstagramUtils::formatData(endT));
+                stringstream sk2; sk2 << (*media)["timeline_pinned_user_ids"];
+                if (sk2.str()!="null"){
+                    if (t<=endT && t>=startT){
+                        string views;
+                        stringstream ss;
+                        string _counter=uint_to_str(++counter);
+                        string _data=formatData(t, true); //Поменть на true для полной даты в рилсах
+                        string _link=string("https://www.instagram.com/p/")+string((*media)["code"])+"/";
+                        stringstream sk1; sk1 << (*media)["like_count"];
+                        string _likes=sk1.str();
+                        vect.push_back({_data, _link,  _likes, _counter});
+                    }
+                    coun++;
+                    continue;
+                }
+#endif
                 if (t<=endT){
                     stringstream sq;
                     l_post=InstagramUtils::formatData(t);
@@ -202,19 +235,75 @@ public:
                 coun++;
             }
             for (; media!=dat.end(); media++){
+#ifdef Reels
                 t=(time_t)(*media)["media"]["taken_at"];
+#elif Posts
+                t=(time_t)(*media)["taken_at"];
+#endif
                 if (t>=startT){
                     end_post_time=t;
                     string views;
                     stringstream ss;
                     //vect.push_back(formatData(t));
+
+
+
+                    string _counter=uint_to_str(++counter);
+                    string _data=formatData(t, true); //Поменть на true для полной даты в рилсах
+#ifdef Reels
                     ss <<(*media)["media"]["play_count"];
                     if (ss.str()=="null"){
                         stringstream sk1;
                         sk1 << (*media)["media"]["view_count"];
                         views = sk1.str();
                     }else views=ss.str();
-                    vect.push_back({views, formatData(t, true), string("https://www.instagram.com/reel/")+string((*media)["media"]["code"])+"/"});
+                    stringstream sk1; sk1 << (*media)["media"]["like_count"];
+                    string _likes=sk1.str();
+                    string _link=string("https://www.instagram.com/reel/")+string((*media)["media"]["code"])+"/";
+#elif Posts
+                    string _link=string("https://www.instagram.com/p/")+string((*media)["code"])+"/";
+
+                    stringstream sk1; sk1 << (*media)["like_count"];
+                    string _likes=sk1.str();
+#endif
+                    //DlVLC
+                    /* D - Full format Data
+                     * d - Short format Data
+                     * l - Link
+                     * V - Count of Views
+                     * L - Count of Likes
+                     * C - Counter
+                     */
+#ifdef Reels
+                    vector<string> tmp;
+                    for(auto elem: _fmt){
+                        switch (elem) {
+                        case 'D':
+                            tmp.push_back(formatData(t, true));
+                            break;
+                        case 'd':
+                            tmp.push_back(formatData(t, false));
+                            break;
+                        case 'l':
+                            tmp.push_back(_link);
+                            break;
+                        case 'V':
+                            tmp.push_back(views);
+                            break;
+                        case 'L':
+                            tmp.push_back(_likes);
+                            break;
+                        case 'C':
+                            tmp.push_back(_counter);
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                    vect.push_back(tmp);
+#elif Posts
+                    vect.push_back({_data, _link,  _likes, _counter});
+#endif
                     count++;
                 }else{
                     break;
@@ -224,10 +313,18 @@ public:
             stringstream sq2;
             f_post=count!=0 ? formatData(end_post_time) : "not find reels";
             stringstream sq3;
+#ifdef Reels
             sq3 << data["paging_info"]["more_available"];
+#elif Posts
+            sq3 << data["more_available"];
+#endif
             maxid="";
             if (coun==dat.size() && sq3.str()=="true"){
+#ifdef Reels
                 maxid=data["paging_info"]["max_id"];
+#elif Posts
+                maxid=data["next_max_id"];
+#endif
             }
             //std::cout << formatData((time_t)(*dat.begin())["media"]["taken_at"]) << " " << formatData((time_t)(*dat.rbegin())["media"]["taken_at"]) << "\n";
             std::cout << coun << " = count in reponce; " << count << " = count of parsing\n";

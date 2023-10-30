@@ -14,7 +14,7 @@ using std::pair;
 
 namespace request{
 
-    static uint Request_count_max_ms=8000;
+    static uint Request_count_max_ms=9000;
 
     class Request
     {
