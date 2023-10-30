@@ -181,7 +181,7 @@ public:
 
     static std::string _fmt;
 
-    static uint ProcessingResponceOfParsing(std::stringstream* buffer, const time_t& startT, const time_t& endT, string& maxid, std::vector<std::vector<string>>& answer, uint& counter, string& _fmt){
+    static uint ProcessingResponceOfParsing(std::stringstream* buffer, const time_t& startT, const time_t& endT, string& maxid, std::vector<std::vector<string>>& answer, uint& counter, const string& _fmt){
 
         json data;
         try{

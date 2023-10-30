@@ -1,4 +1,5 @@
 #include "request.h"
+#include "instagramutils.h"
 
 namespace request{
 
@@ -132,7 +133,7 @@ namespace request{
 
 
     #ifdef DEBUG
-        std::cout << format("URL: {}\nBODY: {}\n", URL, responce->str());
+    /*    std::cout << format("URL: {}\nBODY: {}\n", URL, responce->str());
         std::cout << "Headers:\n";
         auto temp=headers;
         while (temp){
@@ -141,6 +142,7 @@ namespace request{
         }
         //std::cout << responce->str();
         std::cout << "End Headers\n\n";
+    */
     #endif
         some=responce->str();
         data=some.c_str();
@@ -175,6 +177,7 @@ namespace request{
 #ifdef DEBUG
         //curl_easy_setopt(handle, CURLOPT_URL, URL.c_str());
         std::cout << format("URL: {}\nBODY: {}\n", URL, responce->str());
+    /*
         std::cout << "Headers:\n";
         auto temp=headers;
         while (temp){
@@ -183,15 +186,20 @@ namespace request{
         }
         //std::cout << responce->str();
         std::cout << "End Headers\n\n";
+    */
 #endif
         str="";
         int res=curl_easy_perform(handle);
         double secs;
         curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res);
         curl_easy_getinfo(handle, CURLINFO_TOTAL_TIME, &secs);
-        //std::cout << "Time " << secs << "-s\n";
+        std::cout << this->URL << " Time " << secs << "-s\n";
         if (res!=200 || Request_count_max_ms-secs*1000<Request_count_max_ms*0.05){
-            //std::cout << res << " Repeat Request\n";
+            std::cout << res << " " << this->URL << " Repeat Request\n";
+            if (res==429){
+                std::cout << URL << " WAIT " << this->metadata.first["retry-after"]<< "ms\n";
+                std::this_thread::sleep_for(std::chrono::seconds(InstagramUtils::str_to_int(metadata.first["retry-after"])));
+            }
             if (res==502){
                 std::cout << format("URL: {}\nBODY: {}\n", URL, responce->str());
                 throw "502";
@@ -203,11 +211,13 @@ namespace request{
 #endif
 
 #ifdef DEBUG
+        /*
         std::cout << "Answer Headers:\n";
         for (auto &h : metadata.first) {
             std::cout << h.first << ": " << h.second << "\n";
         }
         std::cout << "\n";
+        */
 #endif
         if(responce!=nullptr) *responce=stringstream(str);
 
