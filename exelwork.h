@@ -70,7 +70,7 @@ public:
 
 
 
-            void operator=(const std::string value){
+            void operator=(std::string value){
                 //std::cout << "Sperma";
                 content=value;
                 if (value!="" && isNumeric(value)){

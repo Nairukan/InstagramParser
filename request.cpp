@@ -77,10 +77,15 @@ namespace request{
 
     Request::Request(CURL* handle, string URL,
                      map<string, string>& MapHeaders,
-                     map<string, string>& MapCookies, stringstream* responce, bool isPost)
+                     map<string, string>& MapCookies, stringstream* responce, bool isPost) :
+        handle(handle),
+        responce(responce),
+        metadata({std::ref(MapHeaders), std::ref(MapCookies)}),
+        URL(URL),
+        isPost(isPost)
     {
-        std::pair<map<string, string>&, map<string, string>&> metadata({MapHeaders, MapCookies}); //Headers + Cookie
-        string str;
+
+
 
         if (isPost)
             curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "POST");
@@ -89,15 +94,18 @@ namespace request{
         curl_easy_setopt(handle, CURLOPT_URL, URL.c_str());
         curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(handle, CURLOPT_DEFAULT_PROTOCOL, "https");
+#ifdef DEBUG
         //curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
-
+#endif
         char curlErrorBuffer[CURL_ERROR_SIZE];
         curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, curlErrorBuffer);
 
-        curl_slist* headers = NULL;
+        if (headers!=NULL) curl_slist_free_all(headers);
+        headers = NULL;
         for (const auto &now : MapHeaders){
             headers = curl_slist_append(headers, (now.first+": "+now.second).c_str());
         }
+        //if (responce!=nullptr) str=responce->str();
         stringstream cookies;
         for (const auto &now: MapCookies){
             cookies << now.first << "=" << now.second << "; ";
@@ -134,70 +142,80 @@ namespace request{
         //std::cout << responce->str();
         std::cout << "End Headers\n\n";
     #endif
-        string some=responce->str();
-        const char* data=some.c_str();
+        some=responce->str();
+        data=some.c_str();
 
         if (!responce->str().empty() && isPost){
             curl_easy_setopt(handle, CURLOPT_POSTFIELDS, data);
         }
         curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, Request_count_max_ms);
+
+    }
+
+    Request& Request::exec(map<string, string>& MapHeaders, map<string, string>& MapCookies){
+        metadata=std::pair<map<string, string>&, map<string, string>&> ({MapHeaders, MapCookies});
+        if (headers!=NULL) curl_slist_free_all(headers);
+        headers = NULL;
+        for (const auto &now : MapHeaders){
+            headers = curl_slist_append(headers, (now.first+": "+now.second).c_str());
+        }
+        stringstream cookies;
+        for (const auto &now: MapCookies){
+            cookies << now.first << "=" << now.second << "; ";
+        }
+        if (cookies.str().length())
+            headers = curl_slist_append(headers, std::format("Cookie: {}", cookies.str().substr(0, cookies.str().length()-2)).c_str());
+
+        curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(handle, CURLOPT_HEADERDATA, &metadata);
+        return exec();
+    }
+
+    Request& Request::exec(){
+#ifdef DEBUG
+        //curl_easy_setopt(handle, CURLOPT_URL, URL.c_str());
+        std::cout << format("URL: {}\nBODY: {}\n", URL, responce->str());
+        std::cout << "Headers:\n";
+        auto temp=headers;
+        while (temp){
+            std::cout << temp->data << "\n";
+            temp=temp->next;
+        }
+        //std::cout << responce->str();
+        std::cout << "End Headers\n\n";
+#endif
+        str="";
         int res=curl_easy_perform(handle);
         double secs;
         curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res);
         curl_easy_getinfo(handle, CURLINFO_TOTAL_TIME, &secs);
-        std::cout << "Time " << secs << "-s\n";
+        //std::cout << "Time " << secs << "-s\n";
         if (res!=200 || Request_count_max_ms-secs*1000<Request_count_max_ms*0.05){
-            std::cout << res << " Repeat Request\n";
+            //std::cout << res << " Repeat Request\n";
             if (res==502){
                 std::cout << format("URL: {}\nBODY: {}\n", URL, responce->str());
-                std::cout << "Headers:\n";
-                auto temp=headers;
-                while (temp){
-                    std::cout << temp->data << "\n";
-                    temp=temp->next;
-                }
-                //std::cout << responce->str();
-                std::cout << "End Headers\n\n";
-                return;
+                throw "502";
             }
-            Request(handle, URL, MapHeaders, MapCookies, responce, isPost);
-            return;
+            return exec();
         }
-    #ifdef DEBUG
+#ifdef DEBUG
         std::cout << res << "\n";
-    #endif
-        if (res==0){
-            //Request(handle, URL, MapHeaders, MapCookies, responce, isPost);
-        }
-    #ifdef DEBUG
+#endif
+
+#ifdef DEBUG
         std::cout << "Answer Headers:\n";
         for (auto &h : metadata.first) {
             std::cout << h.first << ": " << h.second << "\n";
         }
         std::cout << "\n";
-    #endif
-        int headers_size;
-        curl_easy_getinfo(handle, CURLINFO_HEADER_SIZE, &headers_size);
-        if(responce!=nullptr) *responce=stringstream(str);//.substr(headers_size));
-        //curl_easy_getinfo(handle, CURLINFO_COOKIELIST, &str);
-        //printf("Recived Cookies:\n %s\n", info_cookies);
-        //curl_easy_getinfo(handle, CURLINFO_HEADER_SIZE, &res);
-        //if (headers)
-        //printf("Headers:\n %s\n", headers->data);
-        //std::cout << "HeadersSize: " << res << "\n";
-        curl_slist_free_all(headers);
-        //curl_easy_cleanup(handle);
+#endif
+        if(responce!=nullptr) *responce=stringstream(str);
 
-        //curl_easy_setopt(handle, CURLOPT_HEADER, hea)
+        if (headers!=NULL) curl_slist_free_all(headers);
+        return *this;
     }
 
-    Request::Request(CURL* handle, string URL,
-                     curl_slist* headers,
-                     map<string, string> MapCookies)
-    {
-        curl_easy_setopt(handle, CURLOPT_URL, URL.c_str());
-
-        //curl_easy_setopt(handle, CURLOPT_HEADER, hea)
-    }
-
+    const stringstream* Request::result(){return responce;}
 }
+
+//32 байта в пинг = 66мс
