@@ -191,10 +191,16 @@ int main(int argc, char** argv){
 
 //Parsing begin
     thread* _threadpool[username.size()];
+
+    vector<map<string,string>> _headers_pool(username.size(), headers);
+    vector<map<string,string>> _cookies_pool(username.size(), cookies);
+    vector<long> _times_pool(username.size(), time(0));
+    //vector<pair<pair<map<string, string>, map<string, string>>, long>> metadatas(username.size(), {{headers, cookies}, time(0)});
     uint index=0;
     for (auto now: username){
         cout << now << ":\n";
-        _threadpool[index] = new thread([fmt, dirpath](map<string, string> headers, map<string,string> cookies, string now){
+
+        _threadpool[index] = new thread([fmt, dirpath](map<string, string> &headers, map<string,string>& cookies, string now, long& _time){
             uint counter=0;
             uint res=0;
             string max_id="";
@@ -208,6 +214,7 @@ int main(int argc, char** argv){
             headers["X-CSRFToken"]=cookies["csrftoken"];
             *buffer=stringstream();
             Request(handle, "https://www.instagram.com/api/v1/users/web_profile_info/?username="+now, headers, cookies, buffer, false).exec();
+            _time=time(0);
     #ifdef DEBUG_FILE
             ofstream get_id("get_id.log");
             get_id << "\n\n" << buffer->str();
@@ -237,6 +244,7 @@ int main(int argc, char** argv){
                 ofstream Reels("Reels.log");
                 Reels << "\n\n" << buffer->str();
     #endif
+                _time=time(0);
                 if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, answer, counter, fmt); !res){
                     cout << now << " - error parsing reels. Skiped...\n";
                     break;
@@ -260,6 +268,7 @@ int main(int argc, char** argv){
                 *buffer=stringstream();
                 Request(handle, format("https://www.instagram.com/api/v1/feed/user/{}/?{}", id, "count=100&max_id="+max_id), headers, cookies, buffer, true).exec();
     #endif
+                _time=time(0);
                 vector<vector<std::string>> t_answer;
                 if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, t_answer, counter, fmt); !res){
                     cout << now << " - error parsing reels. Skiped...\n";
@@ -276,9 +285,9 @@ int main(int argc, char** argv){
             if (answer.size()==0) answer=vector<vector<string>>({vector<string>(fmt.length(), "no found posts")});
             auto vect=answer;
 
-            uint _COUNER_POS=3;
+            uint _COUNER_POS=-1;
             for (int i=0; i<fmt.length(); i++)
-                if (fmt[i]=='c') _COUNER_POS=i;
+                if (fmt[i]=='C') _COUNER_POS=i;
             if (_COUNER_POS!=-1)
                 for (int i=0; i<vect.size()/2; i++){
                     swap(vect[i][_COUNER_POS], vect[answer.size()-i-1][_COUNER_POS]);
@@ -328,12 +337,25 @@ int main(int argc, char** argv){
 
             delete buffer;
             curl_easy_cleanup(handle);
-        }, headers, cookies, now);
-        index++;
+        }, std::ref(_headers_pool[index]), std::ref(_cookies_pool[index]), now, std::ref(_times_pool[index]));
+        ++index;
     }
     for (auto now : _threadpool){
         now->join();
         delete now;
+    }
+    //Take Lastest metadata
+    {
+        uint index=-1;
+        for (uint i=0; i<_times_pool.size(); i++){
+            if (index==-1 || _times_pool[i]>_times_pool[index])
+                if (_cookies_pool[index]["sessionid"]!="")
+                    index=i;
+        }
+        if (index!=-1){
+            headers=_headers_pool[index];
+            cookies=_cookies_pool[index];
+        }
     }
 //Parsing end
 
