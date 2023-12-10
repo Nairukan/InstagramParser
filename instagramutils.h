@@ -134,7 +134,8 @@ public:
                     }
             }
         }
-        return count==2;
+        //std::cout << count << " - count\n"; std::cout.flush();
+        return count>=2;
     }
 
 
@@ -265,6 +266,7 @@ public:
 
                     stringstream sk1; sk1 << (*media)["like_count"];
                     string _likes=sk1.str();
+
 #endif
                     //DlVLC
                     /* D - Full format Data
@@ -275,6 +277,36 @@ public:
                      * C - Counter
                      */
 #ifdef Reels
+                    vector<string> tmp;
+                    for(auto elem: _fmt){
+                        switch (elem) {
+                        case 'D':
+                            tmp.push_back(formatData(t, true));
+                            break;
+                        case 'd':
+                            tmp.push_back(formatData(t, false));
+                            break;
+                        case 'l':
+                            tmp.push_back(_link);
+                            break;
+                        case 'W':
+                            tmp.push_back(" ");
+                            break;
+                        case 'V':
+                            tmp.push_back(views);
+                            break;
+                        case 'L':
+                            tmp.push_back(_likes);
+                            break;
+                        case 'C':
+                            tmp.push_back(_counter);
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                    vect.push_back(tmp);
+#elif Posts
                     vector<string> tmp;
                     for(auto elem: _fmt){
                         switch (elem) {
@@ -301,8 +333,6 @@ public:
                         }
                     }
                     vect.push_back(tmp);
-#elif Posts
-                    vect.push_back({_data, _link,  _likes, _counter});
 #endif
                     count++;
                 }else{

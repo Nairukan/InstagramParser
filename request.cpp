@@ -148,6 +148,8 @@ namespace request{
         if (!responce->str().empty() && isPost){
             curl_easy_setopt(handle, CURLOPT_POSTFIELDS, data);
         }
+        //curl_easy_setopt(handle, CURLOPT_TCP_KEEPALIVE, Request_count_max_ms);
+
         curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, Request_count_max_ms);
 
     }
@@ -189,9 +191,10 @@ namespace request{
         double secs;
         curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res);
         curl_easy_getinfo(handle, CURLINFO_TOTAL_TIME, &secs);
-        //std::cout << "Time " << secs << "-s\n";
-        if (res!=200 || Request_count_max_ms-secs*1000<Request_count_max_ms*0.05){
+        std::cout << "Time " << secs << "-s\n";
+        if (res!=200 || Request_count_max_ms-secs*1000<Request_count_max_ms*0.01){
             //std::cout << res << " Repeat Request\n";
+            if ((Request_count_max_ms<500 && res!=200)) std::this_thread::sleep_for(std::chrono::seconds(10));
             if (res==502){
                 std::cout << format("URL: {}\nBODY: {}\n", URL, responce->str());
                 throw "502";
