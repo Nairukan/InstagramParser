@@ -9,14 +9,23 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(CURL REQUIRED)
-include_directories(${CURL_INCLUDE_DIR})
+find_package(ExelWorkLib CONFIG REQUIRED) #
+find_package(NetworkRequestLib CONFIG REQUIRED) #
+include_directories(${CURL_INCLUDE_DIR}
+                    ${ExelWorkLib_INCLUDE_DIR}
+                    ${NetworkRequestLib_INCLUDE_DIR}
+                )
 
-add_executable(InstagramParser main.cpp request.cpp request.h instagramutils.h
-    exelwork.h
-    parsingpool.h parsingpool.cpp
+            add_executable(InstagramParser main.cpp   instagramutils.h
+
+
 )
 
-target_link_libraries(InstagramParser ${CURL_LIBRARIES})
+target_link_libraries(InstagramParser
+    ${CURL_LIBRARIES}
+    ::ExelWorkLib
+    ::NetworkRequestLib
+)
 
 #install(TARGETS Wlad_Parse2
 #    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
