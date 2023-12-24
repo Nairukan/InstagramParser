@@ -134,7 +134,11 @@ public:
                     }
             }
         }
+<<<<<<< HEAD
         std::cout << count << " - count\n"; std::cout.flush();
+=======
+        //std::cout << count << " - count\n"; std::cout.flush();
+>>>>>>> LinuxUnothread
         return count>=2;
     }
 
@@ -306,8 +310,12 @@ public:
                             break;
                         }
                     }
+<<<<<<< HEAD
                     if (ignor[_link]!=1)  vect.push_back(tmp);
                     else{ std::cout << "Ignoring\n"; std::cout.flush();}
+=======
+                    vect.push_back(tmp);
+>>>>>>> LinuxUnothread
 #elif Posts
                     vector<string> tmp;
                     for(auto elem: _fmt){
@@ -334,8 +342,12 @@ public:
                             break;
                         }
                     }
+<<<<<<< HEAD
                     if (ignor[_link]!=1)  vect.push_back(tmp);
                     else{ std::cout << "Ignoring\n"; std::cout.flush();}
+=======
+                    vect.push_back(tmp);
+>>>>>>> LinuxUnothread
 #endif
                     count++;
                 }else{

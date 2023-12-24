@@ -75,12 +75,19 @@ const string formatData(time_t t, bool isShort=false) {
 
 int main(int argc, char** argv){
     bool ExelOnly=false;
+<<<<<<< HEAD
     bool IgnorList=false;
     if (argc > 1){
         if (string(argv[1])=="-ExelOnly") ExelOnly=true;
         else if (string(argv[1])=="-IgnorList") IgnorList=true;
     }
 
+=======
+    if (argc > 1){
+        if (argv[1]="-ExelOnly") ExelOnly=true;
+    }
+    /*
+>>>>>>> LinuxUnothread
     cout << format("argc: {}\nargv:\n", argc);
     for (int i=0; i<argc; i++) cout << format("{}. {}\n", i, argv[i]);
     //return 0;
@@ -119,6 +126,7 @@ int main(int argc, char** argv){
         username.push_back(temp);
     }
     accounts.close();
+<<<<<<< HEAD
     //IgnorList=true;
     map<string, int> ignor;
     if (IgnorList){
@@ -158,6 +166,32 @@ int main(int argc, char** argv){
         }
         std::cout << fmt << "\n";
     }
+=======
+
+    if (!ExelOnly){
+        cout << std::format("Enter format of responce\n{}\n{}\n{}\n{}\n{}\n{}:\n",
+                " * D - Full format Data",
+                " * d - Short format Data",
+                " * l - Link",
+                " * V - Count of Views",
+                " * L - Count of Likes",
+                " * C - Counter");
+        cin >> fmt;
+        {
+            string temp="DdlVLCW";
+            uint size=fmt.length();
+            for (int i=fmt.length()-1; i>=0; i--){
+                if (temp.find(fmt[i])==temp.length()){
+                    for (int j=i; j<fmt.length()-1; j++)
+                        fmt[j]=fmt[j+1];
+                    --size;
+                }
+            }
+            fmt.resize(size);
+        }
+        std::cout << fmt << "\n";
+    }
+>>>>>>> LinuxUnothread
     cout << "Enter start date in format \"DD.MM.YYYY\":\n";
     cin >> Date;
     Date_t_start=GetUnixTime(Date);
@@ -177,8 +211,11 @@ int main(int argc, char** argv){
         map<string, string> headers({
             {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0"},
             //{"X-Instagram-AJAX", "1008126642"} //1008917085 7 строка
+<<<<<<< HEAD
                                         //1010580532
 
+=======
+>>>>>>> LinuxUnothread
         });
         map<string, string> cookies({});
         CURL* handle=curl_easy_init();
@@ -194,6 +231,7 @@ int main(int argc, char** argv){
     #endif
         InstagramUtils::ExtractPrimeTokens(buffer, headers);
     //Tokens end
+<<<<<<< HEAD
       cout << "Tokens complete\n"; cout.flush();
 
 
@@ -204,6 +242,15 @@ int main(int argc, char** argv){
 
         cookies["csrftoken"]=headers["X-CSRFToken"];
         cout << "csrftoken " << cookies["csrftoken"] << "\n";
+=======
+
+
+    //Authorization begin
+        *buffer=stringstream(std::format("enc_password=%23PWD_INSTAGRAM_BROWSER%3A0%3A{}%3A{}&username={}&queryParams={}&optIntoOneTap=false&trustedDeviceRecords={}",
+                                      int_to_str(time(0)), PASSWORD_PARSING_ACC, USERNAME_PARSING_ACC, "%7B%7D", "%7B%7D"));
+
+        cookies["csrftoken"]=headers["X-CSRFToken"];
+>>>>>>> LinuxUnothread
         part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
         headers["Content-Type"]="application/x-www-form-urlencoded";
         headers["X-Requested-With"]="XMLHttpRequest";
@@ -254,7 +301,11 @@ int main(int argc, char** argv){
                 Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true).exec();
     #elif Posts
                 *buffer=stringstream();
+<<<<<<< HEAD
                 Request(handle, format("https://www.instagram.com/api/v1/feed/user/{}/?{}", id, "count=33"), headers, cookies, buffer, true).exec();
+=======
+                Request(handle, format("https://www.instagram.com/api/v1/feed/user/{}/?{}", id, "count=100"), headers, cookies, buffer, true).exec();
+>>>>>>> LinuxUnothread
     #endif
 
 
@@ -262,7 +313,11 @@ int main(int argc, char** argv){
                 ofstream Reels("Reels.log");
                 Reels << "\n\n" << buffer->str();
     #endif
+<<<<<<< HEAD
                 if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, answer, counter, fmt, ignor); !res){
+=======
+                if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, answer, counter, fmt); !res){
+>>>>>>> LinuxUnothread
                     cout << now << " - error parsing reels. Skiped...\n";
                     break;
                 }
@@ -279,6 +334,7 @@ int main(int argc, char** argv){
                 headers["X-CSRFToken"]=cookies["csrftoken"];
     #ifdef Reels
                 *buffer=stringstream("target_user_id="+id+"&page_size="+_PAGE_SIZE+"&max_id="+max_id+"&include_feed_video=true");
+<<<<<<< HEAD
                 request::Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true).exec();
     #elif Posts
 
@@ -287,6 +343,16 @@ int main(int argc, char** argv){
     #endif
                 vector<vector<std::string>> t_answer;
                 if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, t_answer, counter, fmt, ignor); !res){
+=======
+                Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true).exec();
+    #elif Posts
+
+                *buffer=stringstream();
+                Request(handle, format("https://www.instagram.com/api/v1/feed/user/{}/?{}", id, "count=100&max_id="+max_id), headers, cookies, buffer, true).exec();
+    #endif
+                vector<vector<std::string>> t_answer;
+                if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, t_answer, counter, fmt); !res){
+>>>>>>> LinuxUnothread
                     cout << now << " - error parsing reels. Skiped...\n";
                     break;
                 }else if(res==1){
