@@ -47,7 +47,7 @@ public:
                     }
                     headers["X-Instagram-AJAX"]=temp.substr(s, k-s);
 #ifdef DEBUG
-                    std::cout << "X-Instagram-AJAX -- FOUND\n";
+                    std::cout <<  i+1 << " X-Instagram-AJAX -- FOUND\n" << headers["X-Instagram-AJAX"] << "\n";
 #endif
                     ++count;
                     continue;
@@ -74,25 +74,25 @@ public:
             json data = json::parse(*buffer);
             for (auto b = data.begin(); b!=data.end() && count!=2; ++b){
                 for (auto now = (*b).begin(); now!=(*b).end() && count!=3; ++now)
-                    if ((*now)[0]=="XIGSharedData"){
+                    if ((*now)[0]=="PolarisSiteData"){
+                        std::cout << "COUNTRY: " << (*now)[2] << "\n"; std::cout.flush();
+                    }else
+                    if ((*now)[0]=="PolarisSecurityConfig"){
 
                         if ((headers["X-CSRFToken"]=="" || headers["X-CSRFToken"]==" ")){
                             //extract csrf_token
                             std::stringstream ss; ss << (*now)[2];
                             std::string inter = ss.str();
+                            //std::cout << inter << "\n";
                             int k;
                             std::string finding="\"raw\"";
-                            int len=(std::string(finding)).length();
-                            for (k=0; k<inter.length()-len; k++){
-                                if (inter.substr(k, len) == finding) break;
-                            }
-                            finding="\"csrf_token\\\":\\\"";
+                            finding="\"csrf_token\":\"";
                             len=(std::string(finding)).length();
                             for (k=0; k<inter.length()-len; k++){
                                 if (inter.substr(k, len) == finding) break;
                             }
                             int s=k+len;
-                            finding="\",\\\"viewer\\\"";
+                            finding="}";
                             len=(std::string(finding)).length();
                             for (k; k<inter.length()-len; k++){
                                 if (inter.substr(k, len) == finding) break;
@@ -100,7 +100,7 @@ public:
                             inter=inter.substr(s, k-s-1);
                             headers["X-CSRFToken"] = inter;
 #ifdef DEBUG
-                            std::cout << "X-CSRFToken -- FOUND\n";
+                            std::cout << i+1 << " X-CSRFToken -- FOUND\n" << headers["X-CSRFToken"] << "\n";
 #endif
                             ++count;
                         }
@@ -128,13 +128,13 @@ public:
                         inter=inter.substr(s, k-s-1);
                         headers["X_IG_App_ID"] = inter;
 #ifdef DEBUG
-                        std::cout << "X_IG_App_ID -- FOUND\n";
+                        std::cout <<  i+1 << " X_IG_App_ID -- FOUND\n" << headers["X_IG_App_ID"] << "\n";
 #endif
                         ++count;
                     }
             }
         }
-        //std::cout << count << " - count\n"; std::cout.flush();
+        std::cout << count << " - count\n"; std::cout.flush();
         return count>=2;
     }
 
@@ -182,7 +182,7 @@ public:
 
     static std::string _fmt;
 
-    static uint ProcessingResponceOfParsing(std::stringstream* buffer, const time_t& startT, const time_t& endT, string& maxid, std::vector<std::vector<string>>& answer, uint& counter, string& _fmt){
+    static uint ProcessingResponceOfParsing(std::stringstream* buffer, const time_t& startT, const time_t& endT, string& maxid, std::vector<std::vector<string>>& answer, uint& counter, string& _fmt, std::map<std::string, int> & ignor){
 
         json data;
         try{
@@ -211,7 +211,7 @@ public:
                 t=(time_t)(*media)["media"]["taken_at"];
 #elif Posts
                 t=(time_t)(*media)["taken_at"];
-                std::cout << std::format("t={} endT={}\n", InstagramUtils::formatData(t), InstagramUtils::formatData(endT));
+                //std::cout << std::format("t={} endT={}\n", InstagramUtils::formatData(t), InstagramUtils::formatData(endT));
                 stringstream sk2; sk2 << (*media)["timeline_pinned_user_ids"];
                 if (sk2.str()!="null"){
                     if (t<=endT && t>=startT){
@@ -261,6 +261,7 @@ public:
                     stringstream sk1; sk1 << (*media)["media"]["like_count"];
                     string _likes=sk1.str();
                     string _link=string("https://www.instagram.com/reel/")+string((*media)["media"]["code"])+"/";
+
 #elif Posts
                     string _link=string("https://www.instagram.com/p/")+string((*media)["code"])+"/";
 
@@ -305,7 +306,8 @@ public:
                             break;
                         }
                     }
-                    vect.push_back(tmp);
+                    if (ignor[_link]!=1)  vect.push_back(tmp);
+                    else{ std::cout << "Ignoring\n"; std::cout.flush();}
 #elif Posts
                     vector<string> tmp;
                     for(auto elem: _fmt){
@@ -332,7 +334,8 @@ public:
                             break;
                         }
                     }
-                    vect.push_back(tmp);
+                    if (ignor[_link]!=1)  vect.push_back(tmp);
+                    else{ std::cout << "Ignoring\n"; std::cout.flush();}
 #endif
                     count++;
                 }else{
@@ -360,9 +363,9 @@ public:
             std::cout << coun << " = count in reponce; " << count << " = count of parsing\n";
             answer=vect;
             return 2;
-        }catch(...){
-
-            std::cout << "unknown error\n";
+        }catch(std::runtime_error e){
+            std::cout << "Error in Parsing responce\n";
+            std::cout << e.what() << "\n"; std::cout.flush();
             return false;
         }
     }

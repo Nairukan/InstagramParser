@@ -4,10 +4,10 @@
 #include <thread>
 #include <mutex>
 #include <bits/stdc++.h>
-#include "request.h"
 #include "instagramutils.h"
 #include <format>
-#include "exelwork.h"
+#include <ExelWorkLib/exelworklib.h>
+#include <NetworkRequestLib/request.h>
 
 //#define DEBUG 1
 #define _PAGE_SIZE "50"
@@ -16,7 +16,7 @@
 
 
 using namespace std;
-using request::Request;
+using namespace request;
 
 string int_to_str(unsigned long long num){
     string ans="";
@@ -75,14 +75,16 @@ const string formatData(time_t t, bool isShort=false) {
 
 int main(int argc, char** argv){
     bool ExelOnly=false;
+    bool IgnorList=false;
     if (argc > 1){
-        if (argv[1]="-ExelOnly") ExelOnly=true;
+        if (string(argv[1])=="-ExelOnly") ExelOnly=true;
+        else if (string(argv[1])=="-IgnorList") IgnorList=true;
     }
-    /*
+
     cout << format("argc: {}\nargv:\n", argc);
     for (int i=0; i<argc; i++) cout << format("{}. {}\n", i, argv[i]);
-    return 0;
-    */
+    //return 0;
+
 
     //************ Is Normal Settings of Parser ************//
     if (!filesystem::is_directory("./temp")) filesystem::create_directory("temp");
@@ -91,11 +93,11 @@ int main(int argc, char** argv){
     if (!filesystem::is_directory("./result/csv_s")) filesystem::create_directory("result/csv_s");
     if (!filesystem::exists("parsing_acc.txt") || filesystem::is_empty("parsing_acc.txt")){
         ofstream("parsing_acc.txt") << "<1 in row Account for parsing>";
-        throw("Error with Setting of Parser(file \"parsing_acc.txt\" must contain list of parsing accounts)\n");
+        throw runtime_error("Error with Setting of Parser(file \"parsing_acc.txt\" must contain list of parsing accounts)\n");
     }
     if (!filesystem::exists("Init.ini") || filesystem::is_empty("Init.ini")){
         (ofstream("Init.ini")) << "<Username ParserAcc> <Password ParserAcc> <ID ParserAcc>";
-        throw("Error with Setting of Parser(file \"Init.ini\" must contain login info about [Parser account])\n");
+        throw runtime_error("Error with Setting of Parser(file \"Init.ini\" must contain login info about [Parser account])\n");
     }
     //request::Request_count_max_ms=8000;
 
@@ -117,6 +119,21 @@ int main(int argc, char** argv){
         username.push_back(temp);
     }
     accounts.close();
+    //IgnorList=true;
+    map<string, int> ignor;
+    if (IgnorList){
+        if (!filesystem::exists("ignor.txt")){
+            (ofstream("ignor.txt")) << "<link of ignor reels>";
+            throw runtime_error("Error with Setting of Parser(file \"ignor.txt\" must to be with flag -IgnorList)\n");
+        }
+        ifstream r1("ignor.txt");
+        string t;
+        while(!r1.eof()){
+            getline(r1, t);
+            if (t=="") continue;
+            ignor[t]=1;
+        }
+    }
 
     if (!ExelOnly){
         cout << std::format("Enter format of responce\n{}\n{}\n{}\n{}\n{}\n{}:\n",
@@ -160,6 +177,8 @@ int main(int argc, char** argv){
         map<string, string> headers({
             {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0"},
             //{"X-Instagram-AJAX", "1008126642"} //1008917085 7 строка
+                                        //1010580532
+
         });
         map<string, string> cookies({});
         CURL* handle=curl_easy_init();
@@ -175,13 +194,16 @@ int main(int argc, char** argv){
     #endif
         InstagramUtils::ExtractPrimeTokens(buffer, headers);
     //Tokens end
+      cout << "Tokens complete\n"; cout.flush();
 
 
     //Authorization begin
+
         *buffer=stringstream(std::format("enc_password=%23PWD_INSTAGRAM_BROWSER%3A0%3A{}%3A{}&username={}&queryParams={}&optIntoOneTap=false&trustedDeviceRecords={}",
                                       int_to_str(time(0)), PASSWORD_PARSING_ACC, USERNAME_PARSING_ACC, "%7B%7D", "%7B%7D"));
 
         cookies["csrftoken"]=headers["X-CSRFToken"];
+        cout << "csrftoken " << cookies["csrftoken"] << "\n";
         part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
         headers["Content-Type"]="application/x-www-form-urlencoded";
         headers["X-Requested-With"]="XMLHttpRequest";
@@ -232,7 +254,7 @@ int main(int argc, char** argv){
                 Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true).exec();
     #elif Posts
                 *buffer=stringstream();
-                Request(handle, format("https://www.instagram.com/api/v1/feed/user/{}/?{}", id, "count=100"), headers, cookies, buffer, true).exec();
+                Request(handle, format("https://www.instagram.com/api/v1/feed/user/{}/?{}", id, "count=33"), headers, cookies, buffer, true).exec();
     #endif
 
 
@@ -240,7 +262,7 @@ int main(int argc, char** argv){
                 ofstream Reels("Reels.log");
                 Reels << "\n\n" << buffer->str();
     #endif
-                if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, answer, counter, fmt); !res){
+                if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, answer, counter, fmt, ignor); !res){
                     cout << now << " - error parsing reels. Skiped...\n";
                     break;
                 }
@@ -257,14 +279,14 @@ int main(int argc, char** argv){
                 headers["X-CSRFToken"]=cookies["csrftoken"];
     #ifdef Reels
                 *buffer=stringstream("target_user_id="+id+"&page_size="+_PAGE_SIZE+"&max_id="+max_id+"&include_feed_video=true");
-                Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true).exec();
+                request::Request(handle, "https://www.instagram.com/api/v1/clips/user/?", headers, cookies, buffer, true).exec();
     #elif Posts
 
                 *buffer=stringstream();
-                Request(handle, format("https://www.instagram.com/api/v1/feed/user/{}/?{}", id, "count=100&max_id="+max_id), headers, cookies, buffer, true).exec();
+                Request(handle, format("https://www.instagram.com/api/v1/feed/user/{}/?{}", id, "count=33&max_id="+max_id), headers, cookies, buffer, true).exec();
     #endif
                 vector<vector<std::string>> t_answer;
-                if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, t_answer, counter, fmt); !res){
+                if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, t_answer, counter, fmt, ignor); !res){
                     cout << now << " - error parsing reels. Skiped...\n";
                     break;
                 }else if(res==1){
