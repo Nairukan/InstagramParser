@@ -73,11 +73,12 @@ public:
             *buffer=std::stringstream("{"+temp.substr(s, k-s-1)+"}");
             json data = json::parse(*buffer);
             for (auto b = data.begin(); b!=data.end() && count!=2; ++b){
-                for (auto now = (*b).begin(); now!=(*b).end() && count!=3; ++now)
-                    if ((*now)[0]=="PolarisSiteData"){
+                for (auto now = (*b).begin(); now!=(*b).end() && count!=3; ++now){
+                    auto root=(*now)[0];
+                    if (root=="PolarisSiteData"){
                         std::cout << "COUNTRY: " << (*now)[2] << "\n"; std::cout.flush();
                     }else
-                    if ((*now)[0]=="PolarisSecurityConfig"){
+                    if (root=="PolarisSecurityConfig" || root=="InstagramSecurityConfig"){
 
                         if ((headers["X-CSRFToken"]=="" || headers["X-CSRFToken"]==" ")){
                             //extract csrf_token
@@ -132,10 +133,11 @@ public:
 #endif
                         ++count;
                     }
+                }
             }
         }
         std::cout << count << " - count\n"; std::cout.flush();
-        return count>=2;
+        return count>=3;
     }
 
 
