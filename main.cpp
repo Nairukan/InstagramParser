@@ -10,7 +10,7 @@
 #include <NetworkRequestLib/request.h>
 
 //#define DEBUG 1
-#define _PAGE_SIZE "50"
+#define _PAGE_SIZE "60"
 
 
 
@@ -43,6 +43,7 @@ time_t Date_t_start, Date_t_stop;
 int str_to_int(string text){
     int ans=0;
     for (int i=0; i<text.length(); i++){
+        if (text[i]<'0' || text[i]>'9') throw "12";
         ans=ans*10+(text[i]-'0');
     }
     return ans;
@@ -70,10 +71,70 @@ const string formatData(time_t t, bool isShort=false) {
     return buf;
 }
 
+void PrimeTokens(CURL* handle, map<string, string>& headers, map<string, string>& cookies){
+    headers["User-Agent"]="Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0";
+    stringstream * buffer = new stringstream;
+    Request(handle, "https://www.instagram.com/", headers, cookies, buffer, true).exec();
+#ifdef DEBUG_FILE
+    ofstream tokens("tokens.log");
+    tokens << "\n\n" << buffer->str();
+#endif
+    if (!InstagramUtils::ExtractPrimeTokens(buffer, headers)){
+        for(auto now: headers){
+            cout << format("headers[{}]={}\n", now.first, now.second);
+        }
+        cout.flush();
+        throw "error";
+    }
+    delete buffer;
+  cout << "Tokens complete\n"; cout.flush();
+}
+
+void Authorizate(CURL* handle, map<string, string>& headers, map<string, string>& cookies){
+    stringstream * buffer = new stringstream;
+    *buffer=stringstream(std::format("enc_password=%23PWD_INSTAGRAM_BROWSER%3A0%3A{}%3A{}&username={}&queryParams={}&optIntoOneTap=false&trustedDeviceRecords={}",
+                                  int_to_str(time(0)), PASSWORD_PARSING_ACC, USERNAME_PARSING_ACC, "%7B%7D", "%7B%7D"));
+
+    cookies["csrftoken"]=headers["X-CSRFToken"];
+    cout << "csrftoken " << cookies["csrftoken"] << "\n";
+    part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
+    headers["Content-Type"]="application/x-www-form-urlencoded";
+    headers["X-Requested-With"]="XMLHttpRequest";
+    Request(handle, "https://www.instagram.com/api/v1/web/accounts/login/ajax/", headers, cookies, buffer, true).exec();
+    headers["X-CSRFToken"]=cookies["csrftoken"];
+    if (cookies["sessionid"]=="" || cookies["sessionid"]==" ") cout << "!!! Not Authorizated !!!\n\n";
+    else cout << "Good Authorizated :)\n\n";
+    cout.flush();
+#ifdef DEBUG_FILE
+    ofstream authorization("authorization.log");
+    authorization << "\n\n" << buffer->str();
+    authorization.close();
+#endif
+    delete buffer;
+}
+
+void Logout(CURL* handle, map<string, string>& headers, map<string, string>& cookies){
+    stringstream * buffer = new stringstream;
+    part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
+    part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
+    headers["X-CSRFToken"]=cookies["csrftoken"];
+    *buffer=stringstream(format("one_tap_app_login=0&user_id={}", cookies["ds_user_id"]));
+    cout << "Logout\n";
+    if (cookies["sessionid"]=="" || cookies["sessionid"]=="\"\"") cout << "Logout not required\n";
+    else Request(handle, "https://www.instagram.com/api/v1/web/accounts/logout/ajax/", headers, cookies, buffer, true).exec();
+    cookies["sessionid"]="";
+#ifdef DEBUG
+    ofstream logout("logout.log");
+    logout << "\n\n" << buffer->str();
+    logout.close();
+#endif
+    delete buffer;
+}
 
 // <worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:mx=\"http://schemas.microsoft.com/office/mac/excel/2008/main\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" xmlns:mv=\"urn:schemas-microsoft-com:mac:vml\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\" xmlns:x15=\"http://schemas.microsoft.com/office/spreadsheetml/2010/11/main\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\"><sheetPr><outlinePr summaryBelow=\"0\" summaryRight=\"0\"/></sheetPr><sheetViews><sheetView workbookViewId=\"0\"/></sheetViews><sheetFormatPr customHeight=\"1\" defaultColWidth=\"12.63\" defaultRowHeight=\"15.75\"/>";
 
 int main(int argc, char** argv){
+    int ViewColumn=-1;
     bool ExelOnly=false;
     bool IgnorList=false;
     if (argc > 1){
@@ -176,9 +237,6 @@ int main(int argc, char** argv){
         //Headers
         map<string, string> headers({
             {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0"},
-            //{"X-Instagram-AJAX", "1008126642"} //1008917085 7 строка
-                                        //1010580532
-
         });
         map<string, string> cookies({});
         CURL* handle=curl_easy_init();
@@ -186,42 +244,25 @@ int main(int argc, char** argv){
 
         stringstream* buffer = new stringstream;
 
-    //Tokens begin
-        Request(handle, "https://www.instagram.com/", headers, cookies, buffer, true).exec();
-    #ifdef DEBUG_FILE
-        ofstream tokens("tokens.log");
-        tokens << "\n\n" << buffer->str();
-    #endif
-        InstagramUtils::ExtractPrimeTokens(buffer, headers);
-    //Tokens end
-      cout << "Tokens complete\n"; cout.flush();
+    //Tokens
+    //PrimeTokens(handle, headers, cookies);
 
 
-    //Authorization begin
+    //Authorization
 
-        *buffer=stringstream(std::format("enc_password=%23PWD_INSTAGRAM_BROWSER%3A0%3A{}%3A{}&username={}&queryParams={}&optIntoOneTap=false&trustedDeviceRecords={}",
-                                      int_to_str(time(0)), PASSWORD_PARSING_ACC, USERNAME_PARSING_ACC, "%7B%7D", "%7B%7D"));
-
-        cookies["csrftoken"]=headers["X-CSRFToken"];
-        cout << "csrftoken " << cookies["csrftoken"] << "\n";
-        part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
-        headers["Content-Type"]="application/x-www-form-urlencoded";
-        headers["X-Requested-With"]="XMLHttpRequest";
-        Request(handle, "https://www.instagram.com/api/v1/web/accounts/login/ajax/", headers, cookies, buffer, true).exec();
-        headers["X-CSRFToken"]=cookies["csrftoken"];
-        if (cookies["sessionid"]=="" || cookies["sessionid"]==" ") cout << "!!! Not Authorizated !!!\n\n";
-        else cout << "Good Authorizated :)\n\n";
-    #ifdef DEBUG_FILE
-        ofstream authorization("authorization.log");
-        authorization << "\n\n" << buffer->str();
-        authorization.close();
-    #endif
-    //Authorization end
+    //Authorizate(handle, headers, cookies);
 
 
     //Parsing begin
+        int countA=0;
 
         for (auto now: username){
+            ++countA;
+            if ((countA-1)%3==0){
+                headers.clear(); cookies.clear();
+                PrimeTokens(handle, headers, cookies);
+                Authorizate(handle, headers, cookies);
+            }
             cout << now << ":\n";
             uint counter=0;
             uint res=0;
@@ -259,8 +300,8 @@ int main(int argc, char** argv){
 
 
     #ifdef DEBUG
-                ofstream Reels("Reels.log");
-                Reels << "\n\n" << buffer->str();
+                //ofstream Reels("Reels.log");
+                //Reels << "\n\n" << buffer->str();
     #endif
                 if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, answer, counter, fmt, ignor); !res){
                     cout << now << " - error parsing reels. Skiped...\n";
@@ -309,6 +350,7 @@ int main(int argc, char** argv){
                     swap(vect[i][_COUNER_POS], vect[answer.size()-i-1][_COUNER_POS]);
                 }
             vector<string> tmp;
+            uint locale_counter=0;
             for(auto elem: fmt){
                 switch (elem) {
                 case 'D':
@@ -325,6 +367,7 @@ int main(int argc, char** argv){
                     break;
                 case 'V':
                     tmp.push_back("Views "+formatData(time(0), true));
+                    ViewColumn=locale_counter;
                     break;
                 case 'L':
                     tmp.push_back("Likes "+formatData(time(0), true));
@@ -335,6 +378,7 @@ int main(int argc, char** argv){
                 default:
                     break;
                 }
+                ++locale_counter;
             }
 
             vect.insert(vect.begin(), tmp);
@@ -353,22 +397,18 @@ int main(int argc, char** argv){
                 unoacc_protocol << (*line)[line->size()-1] << "\n";
             }
             unoacc_protocol.close();
+            if ((countA-1)%3==2){
+                Logout(handle, headers, cookies);
+            }
         }
+    if ((countA-1)%3!=2){
+        Logout(handle, headers, cookies);
+    }
     //Parsing end
 
-    //Logout begin
-        part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
-        part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
-        headers["X-CSRFToken"]=cookies["csrftoken"];
-        *buffer=stringstream(format("one_tap_app_login=0&user_id={}", cookies["ds_user_id"]));
-        cout << "Logout\n";
-        if (cookies["sessionid"]=="" || cookies["sessionid"]=="\"\"") cout << "Logout not required\n";
-        else Request(handle, "https://www.instagram.com/api/v1/web/accounts/logout/ajax/", headers, cookies, buffer, true).exec();
-#ifdef DEBUG
-        ofstream logout("logout.log");
-        logout << "\n\n" << buffer->str();
-        logout.close();
-#endif
+    //Logout
+        //Logout(handle, headers, cookies);
+
         cout << "Resources Cleanig\n";
         curl_global_cleanup();
         delete buffer;
@@ -376,11 +416,18 @@ int main(int argc, char** argv){
     cout << "StartExel\n";
     for (int i=0; i<username.size(); i++) username[i]=dirpath+"/"+username[i]+".csv";
     ExelFile* result=ExelFile::read_CSVs(username);
+    unsigned long long suma=0;
     for (auto now : result->SheetNames){
         uint height=(*result)[now.first].heigth();
+        if (ViewColumn!=-1)
+            for (int i=3; i<=height; ++i){
+                string val=(*result)[now.first][{ViewColumn+1, i}]->val();
+                suma+=str_to_int(val);
+            }
         cout << format("{} - {} reels\n", now.first, height-2);
         //(*(*result)[now.first][{uint(1), uint(height+2)}])=format("=SUM(A3:A{})", height);
     }
+    cout << "SUMMA IS " << suma << "\n";
     result->make_XLXS("result/xlsx_s/"+name);
 
     system(format("cd result/xlsx_s/{0} ; zip -rqm {0}.xlsx * ; cd ../../../", name).c_str());
