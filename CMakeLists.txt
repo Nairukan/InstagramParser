@@ -2,19 +2,21 @@ cmake_minimum_required(VERSION 3.5)
 
 project(InstagramParser LANGUAGES CXX)
 
-#add_compile_definitions(DEBUG_FILE)
+add_compile_definitions(DEBUG_FILE)
 #add_compile_definitions(DEBUG)
 
 #add_compile_definitions(Posts)
 add_compile_definitions(Reels)
 set(CMAKE_CXX_STANDARD 20)
+
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(CURL REQUIRED)
+#find_package(CURL REQUIRED)
 find_package(ExelWorkLib CONFIG REQUIRED) # https://github.com/Nairukan/ExelWorkLib/
 find_package(NetworkRequestLib CONFIG REQUIRED) # https://github.com/Nairukan/NetworkRequestLib/
 
-include_directories(${CURL_INCLUDE_DIR}
+include_directories(#${CURL_INCLUDE_DIR}
+    PUBLIC
                     ${ExelWorkLib_INCLUDE_DIR}
                     ${NetworkRequestLib_INCLUDE_DIR}
                 )
@@ -25,9 +27,10 @@ add_executable(InstagramParser
                 )
 
 target_link_libraries(InstagramParser
-                    ${CURL_LIBRARIES}
+    PUBLIC
+                    #CURL::libcurl
                     ::ExelWorkLib
-                    ::NetworkRequestLib
+                    NetworkRequestLib::NetworkRequestLib_static
                 )
 
 #install(TARGETS Wlad_Parse2

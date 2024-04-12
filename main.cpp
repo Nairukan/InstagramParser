@@ -10,7 +10,8 @@
 #include <NetworkRequestLib/request.h>
 
 //#define DEBUG 1
-#define _PAGE_SIZE "60"
+#define _PAGE_SIZE "110"
+#define Accs_PER_SESSION 8
 
 
 
@@ -57,7 +58,21 @@ time_t GetUnixTime(string strDate, bool endOfDay=false){
     timeinfo.tm_mday   = day;//day of the month - [1,31]
     timeinfo.tm_hour   = endOfDay ? 23 : 0;         //hours since midnight - [0,23]
     timeinfo.tm_min    = endOfDay ? 59 : 0;          //minutes after the hour - [0,59]
-    timeinfo.tm_sec    = endOfDay ? 59 : 0;
+    timeinfo.tm_sec    = endOfDay ? 58 : 0;
+    return mktime ( &timeinfo );
+}
+
+time_t GetUnixTime_ForResource(string strDate){
+    struct tm timeinfo;
+    int year=str_to_int(strDate.substr(0,4)), month=str_to_int(strDate.substr(5,2)), day=str_to_int(strDate.substr(8,2));
+    int hour=str_to_int(strDate.substr(11,2)), min=str_to_int(strDate.substr(14,2)), sec=str_to_int(strDate.substr(17,2));
+
+    timeinfo.tm_year   = year - 1900;
+    timeinfo.tm_mon    = month - 1;    //months since January - [0,11]
+    timeinfo.tm_mday   = day;//day of the month - [1,31]
+    timeinfo.tm_hour   = hour;         //hours since midnight - [0,23]
+    timeinfo.tm_min    = min;          //minutes after the hour - [0,59]
+    timeinfo.tm_sec    = sec;
     return mktime ( &timeinfo );
 }
 
@@ -71,8 +86,9 @@ const string formatData(time_t t, bool isShort=false) {
     return buf;
 }
 
+
 void PrimeTokens(CURL* handle, map<string, string>& headers, map<string, string>& cookies){
-    headers["User-Agent"]="Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0";
+    headers["User-Agent"]="Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0";
     stringstream * buffer = new stringstream;
     Request(handle, "https://www.instagram.com/", headers, cookies, buffer, true).exec();
 #ifdef DEBUG_FILE
@@ -137,9 +153,14 @@ int main(int argc, char** argv){
     int ViewColumn=-1;
     bool ExelOnly=false;
     bool IgnorList=false;
+    string resource_dir="";
+    ExelFile* RESOURCE_BUILD;
     if (argc > 1){
         if (string(argv[1])=="-ExelOnly") ExelOnly=true;
         else if (string(argv[1])=="-IgnorList") IgnorList=true;
+        else if (string(argv[1])=="-FromResource"){
+            resource_dir=argv[2];
+        }
     }
 
     cout << format("argc: {}\nargv:\n", argc);
@@ -219,6 +240,10 @@ int main(int argc, char** argv){
         }
         std::cout << fmt << "\n";
     }
+    vector<string> resource_paths;
+    for (int i=0; i<username.size(); i++) resource_paths.push_back(resource_dir+"/"+username[i]+".csv");
+    RESOURCE_BUILD=ExelFile::read_CSVs(resource_paths);
+
     cout << "Enter start date in format \"DD.MM.YYYY\":\n";
     cin >> Date;
     Date_t_start=GetUnixTime(Date);
@@ -233,17 +258,20 @@ int main(int argc, char** argv){
     if (!filesystem::is_directory(dirpath)) filesystem::create_directory(dirpath);
 
     if (!ExelOnly){
-        curl_global_init(CURL_GLOBAL_ALL);
-        //Headers
-        map<string, string> headers({
-            {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0"},
-        });
-        map<string, string> cookies({});
-        CURL* handle=curl_easy_init();
+        map<string, string> headers,cookies;
+        CURL* handle;
+        stringstream* buffer;
+        if(resource_dir==""){
+            curl_global_init(CURL_GLOBAL_ALL);
+            //Headers
+            headers={
+                {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0"},
+            };
+            cookies={};
+            handle=curl_easy_init();
 
-
-        stringstream* buffer = new stringstream;
-
+            buffer = new stringstream;
+        }
     //Tokens
     //PrimeTokens(handle, headers, cookies);
 
@@ -257,11 +285,13 @@ int main(int argc, char** argv){
         int countA=0;
 
         for (auto now: username){
-            ++countA;
-            if ((countA-1)%3==0){
-                headers.clear(); cookies.clear();
-                PrimeTokens(handle, headers, cookies);
-                Authorizate(handle, headers, cookies);
+            if(resource_dir==""){
+                ++countA;
+                if ((countA-1)%Accs_PER_SESSION==0){
+                    headers.clear(); cookies.clear();
+                    PrimeTokens(handle, headers, cookies);
+                    Authorizate(handle, headers, cookies);
+                }
             }
             cout << now << ":\n";
             uint counter=0;
@@ -270,6 +300,75 @@ int main(int argc, char** argv){
             time_t startT=Date_t_start, endT=Date_t_stop;
             vector<vector<string>> answer;
             string id;
+            if (resource_dir!=""){
+                if(!RESOURCE_BUILD->SheetNames.contains(now)){
+                    cout << now << " - error get_id. Skiped...\n";
+                    continue;
+                }
+                //В ресурсе есть записи
+                auto Sheet = (*RESOURCE_BUILD)[now];
+                int FullDataColumn=0;
+                for (auto qwe : fmt){
+                    if (qwe=='D') break;
+                    ++FullDataColumn;
+                }
+                int line=3;
+                for (line=3; line<=Sheet.heigth() && GetUnixTime_ForResource(Sheet[{FullDataColumn+1, line}]->val())<startT; ++line);
+                vector<vector<string>> vect;
+                for (line; line<=Sheet.heigth() && GetUnixTime_ForResource(Sheet[{FullDataColumn+1, line}]->val())<endT; ++line){
+                    vector<string> temporary_line(fmt.length());
+                    for (int column=1; column<=fmt.length(); ++column){
+                        temporary_line[column-1]=Sheet[{column, line}]->val();
+                    }
+                    vect.push_back(temporary_line);
+                }
+                uint locale_counter=0;
+                vector<string> tmp;
+                for(auto elem: fmt){
+                    switch (elem) {
+                    case 'D':
+                        tmp.push_back("Date");
+                        break;
+                    case 'd':
+                        tmp.push_back("Date");
+                        break;
+                    case 'l':
+                        tmp.push_back("Publication link");
+                        break;
+                    case 'W':
+                        tmp.push_back("Publication link");
+                        break;
+                    case 'V':
+                        tmp.push_back("Views "+formatData(time(0), true));
+                        ViewColumn=locale_counter;
+                        break;
+                    case 'L':
+                        tmp.push_back("Likes "+formatData(time(0), true));
+                        break;
+                    case 'C':
+                        tmp.push_back("№");
+                        break;
+                    default:
+                        break;
+                    }
+                    ++locale_counter;
+                }
+
+                vect.insert(vect.begin(), tmp);
+
+                vect.insert(vect.begin(), vector<string>(fmt.length(), ""));
+
+                vect[0][0]="https://www.instagram.com/"+now+"/?hl=ru";
+                ofstream unoacc_protocol(dirpath+"/"+now+".csv");
+                for (auto line=vect.begin(); line!=vect.end(); line++){
+                    for (int j=0; j<line->size()-1; j++){
+                        unoacc_protocol << (*line)[j] << ";";
+                    }
+                    unoacc_protocol << (*line)[line->size()-1] << "\n";
+                }
+                unoacc_protocol.close();
+                continue;
+            }
             part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
             part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
             headers["X-CSRFToken"]=cookies["csrftoken"];
@@ -299,9 +398,9 @@ int main(int argc, char** argv){
     #endif
 
 
-    #ifdef DEBUG
-                //ofstream Reels("Reels.log");
-                //Reels << "\n\n" << buffer->str();
+    #ifdef DEBUG_FILE
+                //std::ofstream ReelsLOG("Reels.log");
+                //  ReelsLOG << "\n\n" << buffer->str();
     #endif
                 if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, answer, counter, fmt, ignor); !res){
                     cout << now << " - error parsing reels. Skiped...\n";
@@ -397,42 +496,76 @@ int main(int argc, char** argv){
                 unoacc_protocol << (*line)[line->size()-1] << "\n";
             }
             unoacc_protocol.close();
-            if ((countA-1)%3==2){
+            if ((countA-1)%Accs_PER_SESSION==Accs_PER_SESSION-1){
                 Logout(handle, headers, cookies);
             }
         }
-    if ((countA-1)%3!=2){
+    if ((countA-1)%Accs_PER_SESSION!=Accs_PER_SESSION-1 && resource_dir!=""){
         Logout(handle, headers, cookies);
     }
     //Parsing end
 
     //Logout
-        //Logout(handle, headers, cookies);
+       //Logout(handle, headers, cookies);
 
         cout << "Resources Cleanig\n";
-        curl_global_cleanup();
-        delete buffer;
+        if (resource_dir==""){
+            curl_global_cleanup();
+            delete buffer;
+        }
     }
     cout << "StartExel\n";
     for (int i=0; i<username.size(); i++) username[i]=dirpath+"/"+username[i]+".csv";
     ExelFile* result=ExelFile::read_CSVs(username);
+    //ExelFile* special=new ExelFile();
     unsigned long long suma=0;
     for (auto now : result->SheetNames){
         uint height=(*result)[now.first].heigth();
-        if (ViewColumn!=-1)
+        unsigned long long psuma=suma;
+        //string prev_data="";
+        //uint count_per_day=0;
+        if (ViewColumn==-1) ViewColumn=2;
+            //cout << "\n\n" << now.first << ":\n";
             for (int i=3; i<=height; ++i){
+                /*
+                string val_data=(*result)[now.first][{1, i}]->val();
+                if (val_data!=prev_data){
+                    if (prev_data!=""){
+                        cout << prev_data << " " << count_per_day << " reels\n";
+                    }
+                    prev_data=val_data;
+                    count_per_day=1;
+                }
+                else ++count_per_day;
+                */
                 string val=(*result)[now.first][{ViewColumn+1, i}]->val();
+                if (now.first=="goldshark.tm" || now.first=="insta_draki" || now.first=="jastreb.pub" || now.first=="stydoba_tv" || now.first=="vine.or" || now.first=="wolf.pub"){
+                    *((*result)[now.first][{ViewColumn+1, i}])=int_to_str(round(str_to_int(val)/5.0));
+                    val=(*result)[now.first][{ViewColumn+1, i}]->val();
+                }
                 suma+=str_to_int(val);
+
             }
+            /*
+            if (prev_data!=""){
+                cout << prev_data << " " << count_per_day << " reels\n";
+            }
+            */
+        cout << suma-psuma << "\n";
+        //*((*special)["4"][{1, (*special)["4"].heigth()+1}])=(string("https://www.instagram.com/")+string(now.first)+"/?hl=ru");
+        //*((*special)["4"][{2, (*special)["4"].heigth()}])=(int_to_str(height-2));
+        //*((*special)["4"][{3, (*special)["4"].heigth()}])=(int_to_str(suma-psuma));
         cout << format("{} - {} reels\n", now.first, height-2);
         //(*(*result)[now.first][{uint(1), uint(height+2)}])=format("=SUM(A3:A{})", height);
     }
     cout << "SUMMA IS " << suma << "\n";
     result->make_XLXS("result/xlsx_s/"+name);
+    //special->make_XLXS("result/xlsx_s/"+name);
 
     system(format("cd result/xlsx_s/{0} ; zip -rqm {0}.xlsx * ; cd ../../../", name).c_str());
 
     cout << format("result of Parsing located in result/xlsx_s/{0}/{0}.xlsx\n", name);
+    //delete special;
     delete result;
 }
 
