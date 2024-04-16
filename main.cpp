@@ -10,7 +10,7 @@
 #include <NetworkRequestLib/request.h>
 
 //#define DEBUG 1
-#define _PAGE_SIZE "110"
+#define _PAGE_SIZE "50"
 #define Accs_PER_SESSION 8
 
 
@@ -65,7 +65,7 @@ time_t GetUnixTime(string strDate, bool endOfDay=false){
 time_t GetUnixTime_ForResource(string strDate){
     struct tm timeinfo;
     int year=str_to_int(strDate.substr(0,4)), month=str_to_int(strDate.substr(5,2)), day=str_to_int(strDate.substr(8,2));
-    int hour=str_to_int(strDate.substr(11,2)), min=str_to_int(strDate.substr(14,2)), sec=str_to_int(strDate.substr(17,2));
+    int hour=(strDate.length()<=11 ? 0 : str_to_int(strDate.substr(11,2))), min=strDate.length()<=11 ? 0 : str_to_int(strDate.substr(14,2)), sec=strDate.length()<=11 ? 0 : str_to_int(strDate.substr(17,2));
 
     timeinfo.tm_year   = year - 1900;
     timeinfo.tm_mon    = month - 1;    //months since January - [0,11]
@@ -309,13 +309,13 @@ int main(int argc, char** argv){
                 auto Sheet = (*RESOURCE_BUILD)[now];
                 int FullDataColumn=0;
                 for (auto qwe : fmt){
-                    if (qwe=='D') break;
+                    if (qwe=='D' || qwe=='d') break;
                     ++FullDataColumn;
                 }
                 int line=3;
-                for (line=3; line<=Sheet.heigth() && GetUnixTime_ForResource(Sheet[{FullDataColumn+1, line}]->val())<startT; ++line);
+                for (line=3; line<=Sheet.heigth() && GetUnixTime_ForResource(Sheet[{FullDataColumn+1, line}]->val())+2<startT; ++line);
                 vector<vector<string>> vect;
-                for (line; line<=Sheet.heigth() && GetUnixTime_ForResource(Sheet[{FullDataColumn+1, line}]->val())<endT; ++line){
+                for (line; line<=Sheet.heigth() && GetUnixTime_ForResource(Sheet[{FullDataColumn+1, line}]->val())+2<=endT; ++line){
                     vector<string> temporary_line(fmt.length());
                     for (int column=1; column<=fmt.length(); ++column){
                         temporary_line[column-1]=Sheet[{column, line}]->val();
@@ -539,10 +539,10 @@ int main(int argc, char** argv){
                 else ++count_per_day;
                 */
                 string val=(*result)[now.first][{ViewColumn+1, i}]->val();
-                if (now.first=="goldshark.tm" || now.first=="insta_draki" || now.first=="jastreb.pub" || now.first=="stydoba_tv" || now.first=="vine.or" || now.first=="wolf.pub"){
-                    *((*result)[now.first][{ViewColumn+1, i}])=int_to_str(round(str_to_int(val)/5.0));
-                    val=(*result)[now.first][{ViewColumn+1, i}]->val();
-                }
+                //if (now.first=="goldshark.tm" || now.first=="insta_draki" || now.first=="jastreb.pub" || now.first=="stydoba_tv" || now.first=="vine.or" || now.first=="wolf.pub"){
+                //    *((*result)[now.first][{ViewColumn+1, i}])=int_to_str(round(str_to_int(val)/5.0));
+                //    val=(*result)[now.first][{ViewColumn+1, i}]->val();
+                //}
                 suma+=str_to_int(val);
 
             }
