@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 9.0.1, 2024-04-15T20:15:03. -->
+<!-- Written by QtCreator 9.0.1, 2024-06-21T13:05:03. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -220,6 +220,7 @@
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">InstagramParser</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.InstagramParser</value>
     <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">InstagramParser</value>
+    <value type="QString" key="RunConfiguration.Arguments"> -FromResource /home/nikita/QtProj/build-InstagramParser-Desktop-Debug/result/csv_s/ParsingProtocol_start2024_06_01_end2024_06_21</value>
     <value type="bool" key="RunConfiguration.UseCppDebugger">false</value>
     <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>
     <value type="bool" key="RunConfiguration.UseLibrarySearchPath">true</value>

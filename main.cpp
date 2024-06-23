@@ -10,8 +10,8 @@
 #include <NetworkRequestLib/request.h>
 
 //#define DEBUG 1
-#define _PAGE_SIZE "50"
-#define Accs_PER_SESSION 8
+#define _PAGE_SIZE "140"
+#define Accs_PER_SESSION 10
 
 
 
@@ -50,12 +50,37 @@ int str_to_int(string text){
     return ans;
 }
 
+int str_to_double(string text){
+    int ans=0;
+    int i=0;
+    for (; i<text.length() && text[i]!='.'; i++){
+        if (text[i]<'0' || text[i]>'9') throw "12";
+        ans=ans*10+(text[i]-'0');
+    }
+    double multi=0.1;
+    for (i=i+1; i<text.length(); ++i){
+        if (text[i]<'0' || text[i]>'9') throw "12";
+        ans+=multi*(text[i]-'0');
+        multi/=10;
+    }
+    return ans;
+}
+
+
 time_t GetUnixTime(string strDate, bool endOfDay=false){
     struct tm timeinfo;
     int year=str_to_int(strDate.substr(6,4)), month=str_to_int(strDate.substr(3,2)), day=str_to_int(strDate.substr(0,2));
     timeinfo.tm_year   = year - 1900;
     timeinfo.tm_mon    = month - 1;    //months since January - [0,11]
     timeinfo.tm_mday   = day;//day of the month - [1,31]
+
+    if (strDate.length()==19){
+        int hour=str_to_int(strDate.substr(11,2)), min=str_to_int(strDate.substr(14,2)), sec=str_to_int(strDate.substr(17,2));
+        timeinfo.tm_hour   = hour;         //hours since midnight - [0,23]
+        timeinfo.tm_min    = min;          //minutes after the hour - [0,59]
+        timeinfo.tm_sec    = sec;
+        return mktime ( &timeinfo );
+    }
     timeinfo.tm_hour   = endOfDay ? 23 : 0;         //hours since midnight - [0,23]
     timeinfo.tm_min    = endOfDay ? 59 : 0;          //minutes after the hour - [0,59]
     timeinfo.tm_sec    = endOfDay ? 58 : 0;
@@ -240,6 +265,7 @@ int main(int argc, char** argv){
         }
         std::cout << fmt << "\n";
     }
+
     vector<string> resource_paths;
     for (int i=0; i<username.size(); i++) resource_paths.push_back(resource_dir+"/"+username[i]+".csv");
     RESOURCE_BUILD=ExelFile::read_CSVs(resource_paths);
@@ -260,6 +286,7 @@ int main(int argc, char** argv){
     if (!ExelOnly){
         map<string, string> headers,cookies;
         CURL* handle;
+        request::Request::Request_count_max_ms=30000;
         stringstream* buffer;
         if(resource_dir==""){
             curl_global_init(CURL_GLOBAL_ALL);
@@ -282,7 +309,31 @@ int main(int argc, char** argv){
 
 
     //Parsing begin
+
         int countA=0;
+        if(resource_dir==""){
+            headers.clear(); cookies.clear();
+            PrimeTokens(handle, headers, cookies);
+            Authorizate(handle, headers, cookies);
+            for (auto now: username){
+                part_map<string, string>(&headers, {"User-Agent", "X-CSRFToken", "X-Instagram-AJAX", "X_IG_App_ID"});
+                part_map<string, string>(&cookies, {"sessionid", "csrftoken", "ds_user_id"});
+                headers["X-CSRFToken"]=cookies["csrftoken"];
+                *buffer=stringstream();
+                Request(handle, "https://www.instagram.com/api/v1/users/web_profile_info/?username="+now, headers, cookies, buffer, false).exec();
+        #ifdef DEBUG_FILE
+                ofstream get_id("get_id.json");
+                get_id << "\n\n" << buffer->str();
+                get_id.close();
+        #endif
+                unsigned int buffer_sub=0;
+                if (!InstagramUtils::ExtractSubscribe_ParsingAcc(buffer, buffer_sub)){
+                    InstagramUtils::subsribers[now]=0;
+                }else InstagramUtils::subsribers[now]=buffer_sub;
+
+            }
+            Logout(handle, headers, cookies);
+        }
 
         for (auto now: username){
             if(resource_dir==""){
@@ -375,7 +426,7 @@ int main(int argc, char** argv){
             *buffer=stringstream();
             Request(handle, "https://www.instagram.com/api/v1/users/web_profile_info/?username="+now, headers, cookies, buffer, false).exec();
     #ifdef DEBUG_FILE
-            ofstream get_id("get_id.log");
+            ofstream get_id("get_id.json");
             get_id << "\n\n" << buffer->str();
             get_id.close();
     #endif
@@ -399,10 +450,10 @@ int main(int argc, char** argv){
 
 
     #ifdef DEBUG_FILE
-                //std::ofstream ReelsLOG("Reels.log");
+                //std::ofstream ReelsLOG("Reels.json");
                 //  ReelsLOG << "\n\n" << buffer->str();
     #endif
-                if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, answer, counter, fmt, ignor); !res){
+                if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, answer, counter, fmt, ignor, now); !res){
                     cout << now << " - error parsing reels. Skiped...\n";
                     break;
                 }
@@ -426,7 +477,7 @@ int main(int argc, char** argv){
                 Request(handle, format("https://www.instagram.com/api/v1/feed/user/{}/?{}", id, "count=33&max_id="+max_id), headers, cookies, buffer, true).exec();
     #endif
                 vector<vector<std::string>> t_answer;
-                if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, t_answer, counter, fmt, ignor); !res){
+                if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, t_answer, counter, fmt, ignor, now); !res){
                     cout << now << " - error parsing reels. Skiped...\n";
                     break;
                 }else if(res==1){
@@ -518,10 +569,10 @@ int main(int argc, char** argv){
     for (int i=0; i<username.size(); i++) username[i]=dirpath+"/"+username[i]+".csv";
     ExelFile* result=ExelFile::read_CSVs(username);
     //ExelFile* special=new ExelFile();
-    unsigned long long suma=0;
+    long double suma=0;
     for (auto now : result->SheetNames){
         uint height=(*result)[now.first].heigth();
-        unsigned long long psuma=suma;
+        long double psuma=suma;
         //string prev_data="";
         //uint count_per_day=0;
         if (ViewColumn==-1) ViewColumn=2;
@@ -543,7 +594,7 @@ int main(int argc, char** argv){
                 //    *((*result)[now.first][{ViewColumn+1, i}])=int_to_str(round(str_to_int(val)/5.0));
                 //    val=(*result)[now.first][{ViewColumn+1, i}]->val();
                 //}
-                suma+=str_to_int(val);
+                suma+=str_to_double(val);
 
             }
             /*
@@ -551,14 +602,14 @@ int main(int argc, char** argv){
                 cout << prev_data << " " << count_per_day << " reels\n";
             }
             */
-        cout << suma-psuma << "\n";
+        cout << int(suma-psuma) << "\n";
         //*((*special)["4"][{1, (*special)["4"].heigth()+1}])=(string("https://www.instagram.com/")+string(now.first)+"/?hl=ru");
         //*((*special)["4"][{2, (*special)["4"].heigth()}])=(int_to_str(height-2));
         //*((*special)["4"][{3, (*special)["4"].heigth()}])=(int_to_str(suma-psuma));
         cout << format("{} - {} reels\n", now.first, height-2);
         //(*(*result)[now.first][{uint(1), uint(height+2)}])=format("=SUM(A3:A{})", height);
     }
-    cout << "SUMMA IS " << suma << "\n";
+    cout << "SUMMA IS " << int(suma) << "\n";
     result->make_XLXS("result/xlsx_s/"+name);
     //special->make_XLXS("result/xlsx_s/"+name);
 
