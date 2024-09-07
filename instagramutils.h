@@ -1,14 +1,16 @@
 #ifndef INSTAGRAMUTILS_H
 #define INSTAGRAMUTILS_H
 
+#include <fmt/core.h>
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <map>
-#include <format>
+//#include <format>
 #include "nlohmann/json.hpp"
 
+using fmt::format;
 
 using json = nlohmann::json;
 using std::string;
@@ -108,7 +110,7 @@ public:
                         }
 #ifdef DEBUG
                         else{
-                            std::cout << std::format("Extract CSRF skipped - couse of headers[\"X-CSRFToken\"]=\"{}\"\n", headers["X-CSRFToken"]);
+                            std::cout << format("Extract CSRF skipped - couse of headers[\"X-CSRFToken\"]=\"{}\"\n", headers["X-CSRFToken"]);
                         }
 #endif
                     }else if ((headers["X_IG_App_ID"]=="" || headers["X_IG_App_ID"]==" ") && (*now)[0]=="RelayAPIConfigDefaults"){
@@ -196,7 +198,14 @@ public:
 
     static std::string _fmt;
 
-    static uint ProcessingResponceOfParsing(std::stringstream* buffer, const time_t& startT, const time_t& endT, string& maxid, std::vector<std::vector<string>>& answer, uint& counter, string& _fmt, std::map<std::string, int> & ignor, const string current_author){
+    static uint ProcessingResponceOfParsing(std::stringstream* buffer,
+                                            const time_t& startT, const time_t& endT,
+                                            string& maxid,
+                                            std::vector<std::vector<string>>& answer,
+                                            uint& counter,
+                                            string& _fmt,
+                                            std::map<std::string, int> & ignor,
+                                            const string current_author){
 
         json data;
         try{
@@ -225,7 +234,7 @@ public:
                 t=(time_t)(*media)["media"]["taken_at"];
 #elif Posts
                 t=(time_t)(*media)["taken_at"];
-                //std::cout << std::format("t={} endT={}\n", InstagramUtils::formatData(t), InstagramUtils::formatData(endT));
+                //std::cout << format("t={} endT={}\n", InstagramUtils::formatData(t), InstagramUtils::formatData(endT));
                 stringstream sk2; sk2 << (*media)["timeline_pinned_user_ids"];
                 if (sk2.str()!="null"){
                     if (t<=endT && t>=startT){
@@ -260,22 +269,36 @@ public:
                     string views;
                     stringstream ss;
                     //vect.push_back(formatData(t));
-/*
+                    /*
                     string current_auth=(*media)["media"]["user"]["username"];
                     vector<string> couathors;
                     auto couath = (*media)["media"]["coauthor_producers"];
                     uint local_sum=InstagramUtils::subsribers[current_auth];
                     uint total_sum=local_sum;
+                    string couthors_list_str="";
                     for (auto coauthor : couath){
+                        couthors_list_str+=(couthors_list_str.length()? string("| ") :"")+"\""+coauthor["username"]+"\"";
                         if (coauthor["username"]!=current_author) couathors.push_back(coauthor["username"]);
                         if (!InstagramUtils::subsribers.contains(coauthor["username"])) std::cout << "Unknown coauthor - " << coauthor["username"] << "\n";
                         total_sum+=InstagramUtils::subsribers[coauthor["username"]];
                     }
                     if (current_auth!=current_author) couathors.push_back(current_auth);
                     local_sum=InstagramUtils::subsribers[current_author];
-*/
-                    double coef=1;//double(local_sum)/total_sum;
-/*
+
+                    //double coef=double(local_sum)/total_sum;//1;
+                    double coef=1;
+                    */
+                    string current_auth=(*media)["media"]["user"]["username"];
+                    auto couath = (*media)["media"]["coauthor_producers"];
+                    string couthors_list_str="";
+                    couthors_list_str="\""+current_author+"\"";
+                    for (auto coauthor : couath){
+                        if (coauthor["username"]!=current_author)
+                            couthors_list_str+=(couthors_list_str.length()? string("|") :"")+"\""+string(coauthor["username"])+"\"";
+                    }
+                    if (current_auth!=current_author) couthors_list_str+=(couthors_list_str.length()? string("|") :"")+"\""+string(current_auth)+"\"";
+
+                    /*
                     std::cout << "author subs: " << local_sum << "\n" << "coauthors: ";
                     for (auto cou : couathors){
                        std::cout << cou << ", ";
@@ -286,20 +309,20 @@ public:
                     string _data=formatData(t, true); //Поменть на true для полной даты в рилсах
 #ifdef Reels
                     if ((*media)["media"]["play_count"].is_number()){
-                        double view=int((*media)["media"]["play_count"])*coef;
+                        double view=int((*media)["media"]["play_count"]);
                         ss << (view-int(view)<0.49 ? int(view) : int(view)+1);
                         views=ss.str();
                     }else{
                         stringstream sk1;
                         if ((*media)["media"]["view_count"].is_number()){
-                            double view=int((*media)["media"]["view_count"])*coef;
+                            double view=int((*media)["media"]["view_count"]);
                             ss << (view-int(view)<0.49 ? int(view) : int(view)+1);
                         }else{
                             ss << "null";
                         }
                         views = ss.str();
                     }
-                    double like=int((*media)["media"]["like_count"])*coef;
+                    double like=int((*media)["media"]["like_count"]);
                     stringstream sk1; sk1 << (like-int(like)<0.49 ? int(like) : int(like)+1);
                     string _likes=sk1.str();
                     string _link=string("https://www.instagram.com/reel/")+string((*media)["media"]["code"])+"/";
@@ -344,6 +367,9 @@ public:
                         case 'C':
                             tmp.push_back(_counter);
                             break;
+                        case 'a':
+                            tmp.push_back(couthors_list_str);
+                            break;
                         default:
                             break;
                         }
@@ -371,6 +397,9 @@ public:
                             break;
                         case 'C':
                             tmp.push_back(_counter);
+                            break;
+                        case 'a':
+                            tmp.push_back(couthors_list_str);
                             break;
                         default:
                             break;
