@@ -12,7 +12,7 @@
 
 //#define DEBUG 1
 #define _PAGE_SIZE "140"
-#define Accs_PER_SESSION 10
+#define Accs_PER_SESSION 1000
 
 
 
@@ -47,7 +47,7 @@ void part_map(map<T1, T2>* dictionary, initializer_list<T1> keys){
     *dictionary=temp;
 }
 
-string USERNAME_PARSING_ACC, PASSWORD_PARSING_ACC;
+static string USERNAME_PARSING_ACC, PASSWORD_PARSING_ACC;
 time_t Date_t_start, Date_t_stop;
 
 int str_to_int(string text){
@@ -191,6 +191,57 @@ void Logout(CURL* handle, map<string, string>& headers, map<string, string>& coo
     delete buffer;
 }
 
+static bool relogin(request::Request *rq){
+    if (rq->code>=400 && rq->code<500){
+        std::cout << "relogin check\n";
+        json data;
+        try{
+            data= json::parse(rq->get_temp_responce());
+            if (data["status"]!="ok" && data["require_login"]=="true" && data["message"]=="Please wait a few minutes before you try again."){
+                //Count request limit need relogin
+
+                //auto buffer=rq->result();
+                //auto url=rq->URL;
+                auto handle=rq->get_curl_handle();
+                pair<map<string,string>&, map<string, string>&> metadata = rq->get_metadata();
+
+                Logout(handle, metadata.first, metadata.second);
+                metadata.first.clear(); metadata.second.clear();
+                PrimeTokens(handle, metadata.first, metadata.second);
+                Authorizate(handle, metadata.first, metadata.second);
+                rq->exec(metadata.first, metadata.second);
+                return true;
+            }
+        }catch(...){
+            return false;
+        }
+    }
+    return false;
+}
+
+static bool checkpoint(request::Request *rq){
+    if (rq->code>=400 && rq->code<500){
+
+        std::cout << "checkpoint check\n";
+        json data;
+        try{
+            string temp=rq->get_temp_responce();
+            data= json::parse(temp);
+            if (data["status"]!="ok" && data["lock"]==true && data["message"]=="checkpoint_required"){
+                //need pass checkpoint
+                cout << format("Pass Checkpoint on {} acc, and press Enter\n", USERNAME_PARSING_ACC);
+                getline(cin, temp);
+                getline(cin, temp);
+                rq->exec();
+                return true;
+            }
+        }catch(...){
+            return false;
+        }
+    }
+    return false;
+}
+
 // <worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:mx=\"http://schemas.microsoft.com/office/mac/excel/2008/main\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" xmlns:mv=\"urn:schemas-microsoft-com:mac:vml\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\" xmlns:x15=\"http://schemas.microsoft.com/office/spreadsheetml/2010/11/main\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\"><sheetPr><outlinePr summaryBelow=\"0\" summaryRight=\"0\"/></sheetPr><sheetViews><sheetView workbookViewId=\"0\"/></sheetViews><sheetFormatPr customHeight=\"1\" defaultColWidth=\"12.63\" defaultRowHeight=\"15.75\"/>";
 
 int main(int argc, char** argv){
@@ -316,6 +367,8 @@ int main(int argc, char** argv){
     if (!ExelOnly){
         map<string, string> headers,cookies;
         CURL* handle;
+        request::Request::auto_producers_all.push_back(relogin);
+        request::Request::auto_producers_all.push_back(checkpoint);
         request::Request::Request_count_max_ms=30000;
         stringstream* buffer;
         if(resource_dir==""){
@@ -707,7 +760,9 @@ int main(int argc, char** argv){
                 }
                 if (total_sum==0) total_sum=local_sum;
                 double coef=local_sum/double(total_sum);
-                (*(*result)[now.first][{(*result)[now.first].width(), i}])=to_str(coef*100)+"%";
+                auto tmp=to_str(coef*100);
+                std::replace(tmp.begin(), tmp.end(), '.', ',');
+                (*(*result)[now.first][{(*result)[now.first].width(), i}])=tmp+"%";
                 if (_VIEWS_POS!=-1){
                     string views_val=(*result)[now.first][{_VIEWS_POS+1, i}]->val();
                     int view=str_to_int(views_val);

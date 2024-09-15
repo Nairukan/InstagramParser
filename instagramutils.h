@@ -7,6 +7,7 @@
 #include <sstream>
 #include <iostream>
 #include <map>
+#include <NetworkRequestLib/request.h>
 //#include <format>
 #include "nlohmann/json.hpp"
 
@@ -16,6 +17,7 @@ using json = nlohmann::json;
 using std::string;
 using std::stringstream;
 using std::vector;
+
 
 class InstagramUtils
 {
@@ -197,6 +199,8 @@ public:
     }
 
     static std::string _fmt;
+
+
 
     static uint ProcessingResponceOfParsing(std::stringstream* buffer,
                                             const time_t& startT, const time_t& endT,
