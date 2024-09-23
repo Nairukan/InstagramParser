@@ -188,7 +188,7 @@ public:
         return ans;
     }
 
-    static inline string uint_to_str(uint num){
+    static inline string uint_to_str(unsigned int num){
         string answer="";
         if (!num) return "0";
         while(num){
@@ -202,11 +202,11 @@ public:
 
 
 
-    static uint ProcessingResponceOfParsing(std::stringstream* buffer,
+    static unsigned int ProcessingResponceOfParsing(std::stringstream* buffer,
                                             const time_t& startT, const time_t& endT,
                                             string& maxid,
                                             std::vector<std::vector<string>>& answer,
-                                            uint& counter,
+                                            unsigned int& counter,
                                             string& _fmt,
                                             std::map<std::string, int> & ignor,
                                             const string current_author){
@@ -277,8 +277,8 @@ public:
                     string current_auth=(*media)["media"]["user"]["username"];
                     vector<string> couathors;
                     auto couath = (*media)["media"]["coauthor_producers"];
-                    uint local_sum=InstagramUtils::subsribers[current_auth];
-                    uint total_sum=local_sum;
+                    unsigned int local_sum=InstagramUtils::subsribers[current_auth];
+                    unsigned int total_sum=local_sum;
                     string couthors_list_str="";
                     for (auto coauthor : couath){
                         couthors_list_str+=(couthors_list_str.length()? string("| ") :"")+"\""+coauthor["username"]+"\"";
