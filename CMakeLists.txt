@@ -16,6 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(ExelWorkLib CONFIG REQUIRED) # https://github.com/Nairukan/ExelWorkLib/
 find_package(NetworkRequestLib CONFIG REQUIRED) # https://github.com/Nairukan/NetworkRequestLib/
 find_package(fmt)
+find_package(libzip REQUIRED)
 
 include_directories(#${CURL_INCLUDE_DIR}
     PUBLIC
@@ -32,6 +33,7 @@ target_link_libraries(InstagramParser
     PUBLIC
                     #CURL::libcurl
                     fmt
+		    libzip::zip
                     ::ExelWorkLib
                     NetworkRequestLib::NetworkRequestLib_static
                 )

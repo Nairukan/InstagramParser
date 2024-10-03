@@ -6,7 +6,7 @@
 #include <mutex>
 #include <bits/stdc++.h>
 #include "instagramutils.h"
-#include <format>
+#include <fmt/core.h>
 #include <ExelWorkLib/exelworklib.h>
 #include <NetworkRequestLib/request.h>
 
@@ -16,7 +16,7 @@
 
 
 
-
+using fmt::format;
 using namespace std;
 using namespace request;
 
@@ -227,7 +227,7 @@ static bool checkpoint(request::Request *rq){
         try{
             string temp=rq->get_temp_responce();
             data= json::parse(temp);
-            if (data["status"]!="ok" && data["lock"]==true && data["message"]=="checkpoint_required"){
+            if (data["message"]=="checkpoint_required"){
                 //need pass checkpoint
                 cout << format("Pass Checkpoint on {} acc, and press Enter\n", USERNAME_PARSING_ACC);
                 getline(cin, temp);
@@ -514,8 +514,8 @@ int main(int argc, char** argv){
 
 
     #ifdef DEBUG_FILE
-                //std::ofstream ReelsLOG("Reels.json");
-                //  ReelsLOG << "\n\n" << buffer->str();
+                std::ofstream ReelsLOG("Reels.json");
+                  ReelsLOG << "\n\n" << buffer->str();
     #endif
                 if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, answer, counter, fmt, ignor, now); !res){
                     cout << now << " - error parsing reels. Skiped...\n";
