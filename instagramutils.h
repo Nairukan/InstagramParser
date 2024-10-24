@@ -188,7 +188,7 @@ public:
         return ans;
     }
 
-    static inline string uint_to_str(uint num){
+    static inline string uint_to_str(unsigned int num){
         string answer="";
         if (!num) return "0";
         while(num){
@@ -202,11 +202,11 @@ public:
 
 
 
-    static uint ProcessingResponceOfParsing(std::stringstream* buffer,
+    static unsigned int ProcessingResponceOfParsing(std::stringstream* buffer,
                                             const time_t& startT, const time_t& endT,
                                             string& maxid,
                                             std::vector<std::vector<string>>& answer,
-                                            uint& counter,
+                                            unsigned int& counter,
                                             string& _fmt,
                                             std::map<std::string, int> & ignor,
                                             const string current_author){
@@ -236,6 +236,81 @@ public:
             for (; media!=dat.end(); media++){
 #ifdef Reels
                 t=(time_t)(*media)["media"]["taken_at"];
+                stringstream sk2; sk2 << (*media)["media"]["clips_tab_pinned_user_ids"];
+                //std::cout << "is pinned: " << sk2.str() << "\n";
+                if (sk2.str()!="[]"){
+                    if (t<=endT && t>=startT){
+
+                    string views;
+                    stringstream ss;
+                        string current_auth=(*media)["media"]["user"]["username"];
+                        auto couath = (*media)["media"]["coauthor_producers"];
+                        string couthors_list_str="";
+                        couthors_list_str="\""+current_author+"\"";
+                        for (auto coauthor : couath){
+                            if (coauthor["username"]!=current_author)
+                                couthors_list_str+=(couthors_list_str.length()? string("|") :"")+"\""+string(coauthor["username"])+"\"";
+                        }
+                        if (current_auth!=current_author) couthors_list_str+=(couthors_list_str.length()? string("|") :"")+"\""+string(current_auth)+"\"";
+                        string _counter=uint_to_str(++counter);
+                        string _data=formatData(t, true); //Поменть на true для полной даты в рилсах
+                        if ((*media)["media"]["play_count"].is_number()){
+                            double view=int((*media)["media"]["play_count"]);
+                            ss << (view-int(view)<0.49 ? int(view) : int(view)+1);
+                            views=ss.str();
+                        }else{
+                            stringstream sk1;
+                            if ((*media)["media"]["view_count"].is_number()){
+                                double view=int((*media)["media"]["view_count"]);
+                                ss << (view-int(view)<0.49 ? int(view) : int(view)+1);
+                            }else{
+                                ss << "null";
+                            }
+                            views = ss.str();
+                        }
+                        double like=int((*media)["media"]["like_count"]);
+                        stringstream sk1; sk1 << (like-int(like)<0.49 ? int(like) : int(like)+1);
+                        string _likes=sk1.str();
+                        string _link=string("https://www.instagram.com/reel/")+string((*media)["media"]["code"])+"/";
+                        vector<string> tmp;
+                        for(auto elem: _fmt){
+                            switch (elem) {
+                            case 'D':
+                                tmp.push_back(formatData(t, true));
+                                break;
+                            case 'd':
+                                tmp.push_back(formatData(t, false));
+                                break;
+                            case 'l':
+                                tmp.push_back(_link);
+                                break;
+                            case 'W':
+                                tmp.push_back(" ");
+                                break;
+                            case 'V':
+                                tmp.push_back(views);
+                                break;
+                            case 'L':
+                                tmp.push_back(_likes);
+                                break;
+                            case 'C':
+                                tmp.push_back(_counter);
+                                break;
+                            case 'a':
+                                tmp.push_back(couthors_list_str);
+                                break;
+                            default:
+                                break;
+                            }
+                        }
+                        if (ignor[_link]!=1)  vect.push_back(tmp);
+                        else{ std::cout << "Ignoring\n"; std::cout.flush();}
+                        
+                    }
+                    coun++;
+                    continue;
+                }
+
 #elif Posts
                 t=(time_t)(*media)["taken_at"];
                 //std::cout << format("t={} endT={}\n", InstagramUtils::formatData(t), InstagramUtils::formatData(endT));
@@ -277,8 +352,8 @@ public:
                     string current_auth=(*media)["media"]["user"]["username"];
                     vector<string> couathors;
                     auto couath = (*media)["media"]["coauthor_producers"];
-                    uint local_sum=InstagramUtils::subsribers[current_auth];
-                    uint total_sum=local_sum;
+                    unsigned int local_sum=InstagramUtils::subsribers[current_auth];
+                    unsigned int total_sum=local_sum;
                     string couthors_list_str="";
                     for (auto coauthor : couath){
                         couthors_list_str+=(couthors_list_str.length()? string("| ") :"")+"\""+coauthor["username"]+"\"";

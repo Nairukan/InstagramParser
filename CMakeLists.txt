@@ -15,26 +15,79 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #find_package(CURL REQUIRED)
 find_package(ExelWorkLib CONFIG REQUIRED) # https://github.com/Nairukan/ExelWorkLib/
 find_package(NetworkRequestLib CONFIG REQUIRED) # https://github.com/Nairukan/NetworkRequestLib/
-find_package(fmt)
+
+
+find_package(fmt REQUIRED)
+find_package(libzip REQUIRED)
 
 include_directories(#${CURL_INCLUDE_DIR}
     PUBLIC
                     ${ExelWorkLib_INCLUDE_DIR}
                     ${NetworkRequestLib_INCLUDE_DIR}
                 )
+message(WARNING "ExelWorkLib_FOUND = ${ExelWorkLib_FOUND}")
 
-add_executable(InstagramParser
+message(WARNING "NetworkRequestLib_INCLUDE_DIR = ${NetworkRequestLib_INCLUDE_DIR}")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -static-libgcc -static-libstdc++") 
+
+add_executable(InstagramParser 
                     main.cpp
                     instagramutils.h
                 )
 
 target_link_libraries(InstagramParser
     PUBLIC
-                    #CURL::libcurl
-                    fmt
-                    ::ExelWorkLib
+                    CURL::libcurl_static
+                    fmt::fmt
+		            libzip::zip
+                    ExelWorkLib::ExelWorkLib_static
                     NetworkRequestLib::NetworkRequestLib_static
                 )
 
-#install(TARGETS Wlad_Parse2
-#    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+#get_cmake_property(_variableNames VARIABLES)
+#list (SORT _variableNames)
+#foreach (_variableName ${_variableNames})
+#    message(STATUS "${_variableName}=${${_variableName}}")
+#endforeach()
+
+if(WIN32)
+
+    set (From_cmake_dir_to_library_bin "/../../../bin")
+
+    # Задаем список директорий, откуда брать .dll файлы
+    set(DLL_DIRS
+        "${libzip_DIR}${From_cmake_dir_to_library_bin}"
+        "${CURL_DIR}${From_cmake_dir_to_library_bin}"
+        "${ExelWorkLib_DIR}/../bin"
+        "${NetworkRequestLib_DIR}/../bin"
+        "${ZLIB_INCLUDE_DIR}/../bin"
+        "${OPENSSL_INCLUDE_DIR}/../bin"
+
+        # Добавь сюда другие директории, если необходимо
+    )
+
+    # Переменная для хранения всех .dll файлов
+    set(ALL_DLL_FILES "")
+
+    # Проходим по каждой директории из списка
+    foreach(DLL_DIR ${DLL_DIRS})
+        # Получаем список всех .dll файлов в текущей директории
+        file(GLOB DLL_FILES "${DLL_DIR}/*.dll")
+
+        # Добавляем найденные .dll файлы в общую переменную
+        list(APPEND ALL_DLL_FILES ${DLL_FILES})
+    endforeach()
+
+    # Цикл по каждому найденному .dll файлу
+    foreach(DLL_FILE ${ALL_DLL_FILES})
+        # Извлекаем имя файла без пути
+        get_filename_component(DLL_NAME "${DLL_FILE}" NAME)
+
+        # Создаем символическую ссылку в директории целевого исполняемого файла
+        add_custom_command(TARGET InstagramParser POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E create_symlink
+            "${DLL_FILE}" "$<TARGET_FILE_DIR:InstagramParser>/${DLL_NAME}"
+        )
+    endforeach()
+endif()

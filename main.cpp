@@ -6,7 +6,7 @@
 #include <mutex>
 #include <bits/stdc++.h>
 #include "instagramutils.h"
-#include <format>
+#include <fmt/core.h>
 #include <ExelWorkLib/exelworklib.h>
 #include <NetworkRequestLib/request.h>
 
@@ -16,7 +16,7 @@
 
 
 
-
+using fmt::format;
 using namespace std;
 using namespace request;
 
@@ -197,7 +197,7 @@ static bool relogin(request::Request *rq){
         json data;
         try{
             data= json::parse(rq->get_temp_responce());
-            if (data["status"]!="ok" && data["require_login"]=="true" && data["message"]=="Please wait a few minutes before you try again."){
+            if (data["status"]!="ok" && data["require_login"]==true && data["message"]=="Please wait a few minutes before you try again."){
                 //Count request limit need relogin
 
                 //auto buffer=rq->result();
@@ -227,7 +227,7 @@ static bool checkpoint(request::Request *rq){
         try{
             string temp=rq->get_temp_responce();
             data= json::parse(temp);
-            if (data["status"]!="ok" && data["lock"]==true && data["message"]=="checkpoint_required"){
+            if (data["message"]=="checkpoint_required"){
                 //need pass checkpoint
                 cout << format("Pass Checkpoint on {} acc, and press Enter\n", USERNAME_PARSING_ACC);
                 getline(cin, temp);
@@ -332,7 +332,7 @@ int main(int argc, char** argv){
         fmt+="a";
         {
             string temp="DdlVLCWa";
-            uint size=fmt.length();
+            unsigned int size=fmt.length();
             for (int i=fmt.length()-1; i>=0; i--){
                 if (temp.find(fmt[i])==temp.length()){
                     for (int j=i; j<fmt.length()-1; j++)
@@ -406,8 +406,8 @@ int main(int argc, char** argv){
                 }
             }
             cout << now << ":\n";
-            uint counter=0;
-            uint res=0;
+            unsigned int counter=0;
+            unsigned int res=0;
             string max_id="";
             time_t startT=Date_t_start, endT=Date_t_stop;
             vector<vector<string>> answer;
@@ -434,7 +434,7 @@ int main(int argc, char** argv){
                     }
                     vect.push_back(temporary_line);
                 }
-                uint locale_counter=0;
+                unsigned int locale_counter=0;
                 vector<string> tmp;
                 for(auto elem: fmt){
                     switch (elem) {
@@ -514,8 +514,8 @@ int main(int argc, char** argv){
 
 
     #ifdef DEBUG_FILE
-                //std::ofstream ReelsLOG("Reels.json");
-                //  ReelsLOG << "\n\n" << buffer->str();
+                std::ofstream ReelsLOG("Reels.json");
+                  ReelsLOG << "\n\n" << buffer->str();
     #endif
                 if (res=InstagramUtils::ProcessingResponceOfParsing(buffer, startT, endT, max_id, answer, counter, fmt, ignor, now); !res){
                     cout << now << " - error parsing reels. Skiped...\n";
@@ -556,7 +556,7 @@ int main(int argc, char** argv){
             if (answer.size()==0) answer=vector<vector<string>>({vector<string>(fmt.length(), "no found posts")});
             auto vect=answer;
 
-            uint _COUNER_POS=-1;
+            unsigned int _COUNER_POS=-1;
             for (int i=0; i<fmt.length(); i++)
                 if (fmt[i]=='c') _COUNER_POS=i;
             if (_COUNER_POS!=-1)
@@ -564,7 +564,7 @@ int main(int argc, char** argv){
                     swap(vect[i][_COUNER_POS], vect[answer.size()-i-1][_COUNER_POS]);
                 }
             vector<string> tmp;
-            uint locale_counter=0;
+            unsigned int locale_counter=0;
             for(auto elem: fmt){
                 switch (elem) {
                 case 'D':
@@ -645,10 +645,10 @@ int main(int argc, char** argv){
     for (int i=0; i<username.size(); i++) username[i]=dirpath+"/"+username[i]+".csv";
     ExelFile* result=ExelFile::read_CSVs(username);
     result->make_XLXS(format("result/xlsx_s/{}/raw_with_list_couathors.xlsx", name));
-    uint _VIEWS_POS=-1;
-    uint _LIKES_POS=-1;
-    uint _LINK_POS=-1;
-    uint _TIME_POS=-1;
+    unsigned int _VIEWS_POS=-1;
+    unsigned int _LIKES_POS=-1;
+    unsigned int _LINK_POS=-1;
+    unsigned int _TIME_POS=-1;
     for (int i=0; i<fmt.length(); i++)
         if (fmt[i]=='L') _LIKES_POS=i;
         else if (fmt[i]=='V') _VIEWS_POS=i;
@@ -656,7 +656,7 @@ int main(int argc, char** argv){
         else if (fmt[i]=='d' || fmt[i]=='D') _TIME_POS=i;
 
     ExelFile* newExel=new ExelFile();
-        map<string, uint> now_lines;
+        map<string, unsigned int> now_lines;
         set<string> links;
         map<string, time_t> now_times;
         for (auto now: result->SheetNames){
@@ -669,7 +669,7 @@ int main(int argc, char** argv){
         }
         time_t max_time=0;
         string now_record_parent;
-        uint currentLine=2;
+        unsigned int currentLine=2;
         while(true){
             if (now_lines.size())
                 now_record_parent=now_lines.begin()->first;
@@ -680,7 +680,7 @@ int main(int argc, char** argv){
                 }
             }
             string current_link=(*result)[now_record_parent][{_LINK_POS+1, now_lines[now_record_parent]}]->val();
-            uint old_size=links.size();
+            unsigned int old_size=links.size();
             if (links.insert(current_link); old_size!=links.size()){
                 for (int j=1; j<=(*result)[now_record_parent].width(); ++j)
                     (*(*newExel)["AllReels"][{j, currentLine}])=(*result)[now_record_parent][{j, now_lines[now_record_parent]}]->val();
@@ -752,8 +752,8 @@ int main(int argc, char** argv){
             for (int i=3; i<=(*result)[now.first].heigth(); ++i){
                 auto list=split((*result)[now.first][{(*result)[now.first].width(), i}]->val(), '|');
 
-                uint local_sum=InstagramUtils::subsribers[now.first];
-                uint total_sum=0;
+                unsigned int local_sum=InstagramUtils::subsribers[now.first];
+                unsigned int total_sum=0;
                 for (auto coauthor : list){
                     coauthor.erase(std::remove(coauthor.begin(), coauthor.end(), '\"'), coauthor.end());
                     total_sum+=InstagramUtils::subsribers[coauthor];
@@ -792,10 +792,10 @@ int main(int argc, char** argv){
 
     long double suma=0;
     for (auto now : result->SheetNames){
-        uint height=(*result)[now.first].heigth();
+        unsigned int height=(*result)[now.first].heigth();
         long double psuma=suma;
         //string prev_data="";
-        //uint count_per_day=0;
+        //unsigned int count_per_day=0;
         if (_VIEWS_POS==-1) _VIEWS_POS=2;
             //cout << "\n\n" << now.first << ":\n";
             for (int i=3; i<=height; ++i){
@@ -825,7 +825,7 @@ int main(int argc, char** argv){
             */
         cout << int(suma-psuma) << "\n";
         cout << format("{0} - {1} reels\n", now.first, height-2);
-        //(*(*result)[now.first][{uint(1), uint(height+2)}])=format("=SUM(A3:A{})", height);
+        //(*(*result)[now.first][{(unsigned int)(1), (unsigned int)(height+2)}])=format("=SUM(A3:A{})", height);
     }
     cout << "SUMMA IS " << int(suma) << "\n";
 
