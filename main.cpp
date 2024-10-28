@@ -10,10 +10,6 @@
 #include <ExelWorkLib/exelworklib.h>
 #include <NetworkRequestLib/request.h>
 
-#ifdef _WIN32
-    #include <windows.h>
-#endif
-
 //#define DEBUG 1
 #define _PAGE_SIZE "140"
 #define Accs_PER_SESSION 1000
@@ -376,22 +372,26 @@ int main(int argc, char** argv){
         request::Request::Request_count_max_ms=30000;
         stringstream* buffer;
         if(resource_dir==""){
+
             CURLcode init_result = curl_global_init(CURL_GLOBAL_ALL);
             if (init_result != CURLE_OK) {
                 fprintf(stderr, "curl_global_init() failed: %s\n", curl_easy_strerror(init_result));
                 return 1; // Ошибка инициализации cURL
             }
+
             //Headers
             headers={
                 {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0"},
             };
             cookies={};
             handle=curl_easy_init();
+
             if (!handle) {
                 fprintf(stderr, "curl_easy_init() failed\n");
                 curl_global_cleanup(); // Освобождаем ресурсы cURL
                 return 1; // Ошибка создания cURL-объекта
             }
+
 
             buffer = new stringstream;
         }

@@ -25,11 +25,13 @@ include_directories(#${CURL_INCLUDE_DIR}
                     ${ExelWorkLib_INCLUDE_DIR}
                     ${NetworkRequestLib_INCLUDE_DIR}
                 )
+
 #message(WARNING "ExelWorkLib_FOUND = ${ExelWorkLib_FOUND}")
 
 #message(WARNING "NetworkRequestLib_INCLUDE_DIR = ${NetworkRequestLib_INCLUDE_DIR}")
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -static-libgcc -static-libstdc++") 
+
 
 add_executable(InstagramParser 
                     main.cpp
@@ -38,11 +40,13 @@ add_executable(InstagramParser
 
 target_link_libraries(InstagramParser
     PUBLIC
+
                     #CURL::libcurl_static
                     #fmt::fmt
 		            #libzip::zip
                     ExelWorkLib::ExelWorkLib_shared
                     NetworkRequestLib::NetworkRequestLib_shared
+
                 )
 #[[
 get_cmake_property(_variableNames VARIABLES)
