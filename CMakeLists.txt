@@ -25,11 +25,13 @@ include_directories(#${CURL_INCLUDE_DIR}
                     ${ExelWorkLib_INCLUDE_DIR}
                     ${NetworkRequestLib_INCLUDE_DIR}
                 )
-message(WARNING "ExelWorkLib_FOUND = ${ExelWorkLib_FOUND}")
 
-message(WARNING "NetworkRequestLib_INCLUDE_DIR = ${NetworkRequestLib_INCLUDE_DIR}")
+#message(WARNING "ExelWorkLib_FOUND = ${ExelWorkLib_FOUND}")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -static-libgcc -static-libstdc++") 
+#message(WARNING "NetworkRequestLib_INCLUDE_DIR = ${NetworkRequestLib_INCLUDE_DIR}")
+
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -static-libgcc -static-libstdc++") 
+
 
 add_executable(InstagramParser 
                     main.cpp
@@ -38,24 +40,37 @@ add_executable(InstagramParser
 
 target_link_libraries(InstagramParser
     PUBLIC
-                    CURL::libcurl_static
-                    fmt::fmt
-		            libzip::zip
-                    ExelWorkLib::ExelWorkLib_static
-                    NetworkRequestLib::NetworkRequestLib_static
+
+                    #CURL::libcurl_static
+                    #fmt::fmt
+		            #libzip::zip
+                    ExelWorkLib::ExelWorkLib_shared
+                    NetworkRequestLib::NetworkRequestLib_shared
+
                 )
-
-#get_cmake_property(_variableNames VARIABLES)
-#list (SORT _variableNames)
-#foreach (_variableName ${_variableNames})
-#    message(STATUS "${_variableName}=${${_variableName}}")
-#endforeach()
-
+#[[
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
+#]] 
 if(WIN32)
-
+#[[
+    if(NOT EXISTS "${CMAKE_BINARY_DIR}/cacert.pem")
+        # Скачиваем файл
+        file(DOWNLOAD
+            "https://curl.se/ca/cacert.pem"
+            "${CMAKE_BINARY_DIR}/cacert.pem"
+        )
+    endif()
+#]]
+    #target_compile_definitions(InstagramParser PRIVATE "CACERT_PATH=\"${CMAKE_BINARY_DIR}/cacert.pem\"")
+    #[[
     set (From_cmake_dir_to_library_bin "/../../../bin")
 
     # Задаем список директорий, откуда брать .dll файлы
+    
     set(DLL_DIRS
         "${libzip_DIR}${From_cmake_dir_to_library_bin}"
         "${CURL_DIR}${From_cmake_dir_to_library_bin}"
@@ -66,11 +81,14 @@ if(WIN32)
 
         # Добавь сюда другие директории, если необходимо
     )
+    #]]
 
     # Переменная для хранения всех .dll файлов
     set(ALL_DLL_FILES "")
+    list(APPEND ALL_DLL_FILES ${NetworkRequestLib_DLL} ${ExelWorkLib_DLL})
 
     # Проходим по каждой директории из списка
+    #[[
     foreach(DLL_DIR ${DLL_DIRS})
         # Получаем список всех .dll файлов в текущей директории
         file(GLOB DLL_FILES "${DLL_DIR}/*.dll")
@@ -78,6 +96,7 @@ if(WIN32)
         # Добавляем найденные .dll файлы в общую переменную
         list(APPEND ALL_DLL_FILES ${DLL_FILES})
     endforeach()
+    #]]
 
     # Цикл по каждому найденному .dll файлу
     foreach(DLL_FILE ${ALL_DLL_FILES})
