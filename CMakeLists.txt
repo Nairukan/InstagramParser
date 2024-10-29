@@ -28,7 +28,8 @@ include_directories(#${CURL_INCLUDE_DIR}
 
 #message(WARNING "ExelWorkLib_FOUND = ${ExelWorkLib_FOUND}")
 
-#message(WARNING "NetworkRequestLib_INCLUDE_DIR = ${NetworkRequestLib_INCLUDE_DIR}")
+message(WARNING "NetworkRequestLib_INCLUDE_DIR = ${NetworkRequestLib_INCLUDE_DIR}")
+message(WARNING "ExelWorkLib_INCLUDE_DIR = ${ExelWorkLib_INCLUDE_DIR}")
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -static-libgcc -static-libstdc++") 
 

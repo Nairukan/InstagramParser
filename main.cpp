@@ -7,8 +7,8 @@
 #include <bits/stdc++.h>
 #include "instagramutils.h"
 #include <fmt/core.h>
-#include <ExelWorkLib/exelworklib.h>
-#include <NetworkRequestLib/request.h>
+#include <exelworklib.h>
+#include <request.h>
 
 //#define DEBUG 1
 #define _PAGE_SIZE "140"
