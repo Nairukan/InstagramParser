@@ -1,0 +1,361 @@
+/** @OnlyCurrentDoc */
+function int_to_column(i){
+  var ans=String();
+  --i;
+  var start="A".charCodeAt(0);
+  if (i==0) return "A";
+  while(i>0){
+    ans=(String.fromCharCode(Number(i%26)+start))+ans;
+    i=(i/26) >> 0;
+    if (i==1) ans="A"+ans;
+    --i
+  }
+  return ans;
+}
+
+function myFunction() {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  for (var i=0; i<20; ++i){
+    var ROMAN=spreadsheet.getSheets()[i];
+    var MY=spreadsheet.getSheets()[i+20];
+    for (var row=3; row<=ROMAN.getLastRow(); ++row){
+      if (String(ROMAN.getRange(row, 1).getValue()) == String(MY.getRange(row, 1).getValue())){
+        if (Number(ROMAN.getRange(row, 3).getValue())>Number(MY.getRange(row, 3).getValue())){
+          Logger.log(row+". "+ROMAN.getName()+": ERROR IN VIEWS\n"+ROMAN.getRange(row, 3).getValue()+" "+MY.getRange(row, 3).getValue()+"\n\n");
+          //break;
+        }
+      }
+    }
+    Logger.log(i+" "+ROMAN.getName()+"\n");
+  }
+  return;
+  for (var i=0; i<spreadsheet.getSheets().length;){
+    var She=spreadsheet.getSheetByName(arr_DLVLC[i]);
+    var She2=spreadsheet.getSheetByName(arr_DLVLC[i]+" (1)");
+    if (She!=null && She2!=null){
+      spreadsheet.setActiveSheet(She, true);
+      spreadsheet.getActiveSheet().getRange('A:'+int_to_column(She.getLastColumn())). //откуда вырезать
+          moveTo(spreadsheet.getRange("H1"));
+
+      She2.getRange("A"+3+':D'+She2.getLastRow()).copyValuesToRange(spreadsheet.getActiveSheet(), 1, 4, 3, She2.getLastRow());
+        var x=1;
+          format(arr_DLVLC[i], x, true);
+          if (spreadsheet.getActiveSheet().getRange(int_to_column(x+7)+'3').getValue()=="" || spreadsheet.getActiveSheet().getRange(int_to_column(x+7)+'3').getValue()=="\"\"") 
+            break;
+          x+=7;
+        
+        ++i;
+    }
+  }
+  for (var i=0; i<arr_DLVLC.length; i++){
+    spreadsheet.deleteSheet(spreadsheet.getSheetByName(arr_DLVLC[i]+ " (1)"));
+  }
+
+  for (var i=0; i<arr_DLVC.length;){
+    var She=spreadsheet.getSheetByName(arr_DLVC[i]);
+    var She2=spreadsheet.getSheetByName(arr_DLVC[i]+" (1)");
+    if (She!=null && She2!=null){
+      spreadsheet.setActiveSheet(She, true);
+
+      spreadsheet.getActiveSheet().getRange('A:'+int_to_column(She.getLastColumn())). //откуда вырезать
+          moveTo(spreadsheet.getRange("G1"));
+      She2.getRange("A"+3+':C'+She2.getLastRow()).copyValuesToRange(spreadsheet.getActiveSheet(), 1, 3, 3, She2.getLastRow());
+
+        var x=1;
+          format(arr_DLVC[i], x, false);
+          if (spreadsheet.getActiveSheet().getRange(int_to_column(x+6)+'3').getValue()=="" || spreadsheet.getActiveSheet().getRange(int_to_column(x+6)+'3').getValue()=="\"\"") 
+            break;
+          x+=6;
+        ++i;
+    }
+  }
+  for (var i=0; i<arr_DLVC.length; i++){
+    spreadsheet.deleteSheet(spreadsheet.getSheetByName(arr_DLVC[i]+ " (1)"));
+  }
+
+};
+
+function new_format(name, is_raw=false, data="16.09-15.10"){
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var She=spreadsheet.getSheetByName(name);
+  spreadsheet.setActiveSheet(She, true);
+  She.setFrozenRows(2);
+  var x=1;
+  var header_DLVC=[["Date", "Publication link",	"Views", is_raw ? "Authors List" : "Part Auditory"]];
+  var max_y=0;
+  for (var max_y=3; spreadsheet.getActiveSheet().getRange(int_to_column(x)+String(max_y)).getValue()!=""; max_y++);
+  max_y--;
+  spreadsheet.getActiveSheet().getRange(int_to_column(x)+'2:'+int_to_column(x+3)+'2').activate().setValues(header_DLVC).setBorder(true, true, true, true, true, true,'#000000', SpreadsheetApp.BorderStyle.SOLID);;
+        spreadsheet.getActiveRangeList().setHorizontalAlignment('center').setBackground('#c9daf8').setFontWeight('bold');
+        //Data Column formating
+        spreadsheet.getActiveSheet().getRange(int_to_column(x)+'3'+':'+int_to_column(x)+String(max_y)).setBackground('#efefef').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+1)+'3'+':'+int_to_column(x+1)+String(max_y)).setBackground('#f3f3f3').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID);
+
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+2)+'3'+':'+int_to_column(x+2)+String(max_y)).setBackground('#efefef').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+3)+'3'+':'+int_to_column(x+3)+String(max_y)).setBackground('#f3f3f3').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+        //Sum
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+4)+'1'+":"+int_to_column(x+4)+'2').setFontWeight('bold').setBackground('yellow').setValues([["=SUM("+int_to_column(x+2)+"$3:"+int_to_column(x+2)+String(max_y)+")"], ["ИТОГО"]]).setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+
+        spreadsheet.getRange(int_to_column(x+4)+'1').activate();
+        spreadsheet.getActiveRangeList().setNumberFormat('0');
+        //Title set
+        spreadsheet.getRange(int_to_column(x)+'1:'+int_to_column(x+3)+'1').activate().mergeAcross().setFontWeight('normal');
+        spreadsheet.getCurrentCell().setValue(name+" "+data);
+        spreadsheet.getActiveRangeList().setHorizontalAlignment('center').setBackground('#d9ead3').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID);
+        spreadsheet.getActiveSheet().autoResizeColumns(x, 7);
+        spreadsheet.getActiveSheet().setColumnWidth(x+4, spreadsheet.getActiveSheet().getColumnWidth(x+4)+15);
+}
+
+function format(name, x, isPost, data="11.09-17.09", viewsOnThousand=false){
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var She=spreadsheet.getSheetByName(name);
+  spreadsheet.setActiveSheet(She, true);
+  She.setFrozenRows(2);
+
+  var header_DLVLC=[["Date", "Publication link",	"Views", "Likes", "№"]];
+  var header_DLVC=[["Date", "Publication link",	"Views", "№", "Authors"]];
+  var max_y=0;
+  for (var max_y=3; spreadsheet.getActiveSheet().getRange(int_to_column(x)+String(max_y)).getValue()!=""; max_y++);
+  max_y--;
+  if (isPost){
+        
+        spreadsheet.getRange('E3').activate();
+        spreadsheet.getCurrentCell().setValue('1');
+        spreadsheet.getRange('E4').activate();
+        spreadsheet.getCurrentCell().setFormula('=E3+1');
+        spreadsheet.getRange('E5:E'+max_y).activate();
+        spreadsheet.getRange('E4').copyTo(spreadsheet.getActiveRange(), SpreadsheetApp.CopyPasteType.PASTE_NORMAL, false);
+
+        spreadsheet.getActiveSheet().autoResizeColumns(x, 6);
+        spreadsheet.getActiveSheet().setColumnWidth(x, spreadsheet.getActiveSheet().getColumnWidth(x)+15);
+        //Headers set
+        spreadsheet.getActiveSheet().getRange(int_to_column(x)+'2:'+int_to_column(x+4)+'2').activate().setValues(header_DLVLC).setBorder(true, true, true, true, true, true,'#000000', SpreadsheetApp.BorderStyle.SOLID);;
+        spreadsheet.getActiveRangeList().setHorizontalAlignment('center').setBackground('#c9daf8').setFontWeight('bold');
+        //Data Column formating
+        spreadsheet.getActiveSheet().getRange(int_to_column(x)+'3'+':'+int_to_column(x)+String(max_y)).setBackground('#efefef').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+1)+'3'+':'+int_to_column(x+1)+String(max_y)).setBackground('#f3f3f3').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID);
+
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+2)+'3'+':'+int_to_column(x+2)+String(max_y)).setBackground('#efefef').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+3)+'3'+':'+int_to_column(x+3)+String(max_y)).setBackground('#f3f3f3').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+4)+'3'+':'+int_to_column(x+4)+String(max_y)).setBackground('#efefef').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+        //Sum
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+5)+'1'+":"+int_to_column(x+5)+'2').setFontWeight('bold').setBackground('yellow').setValues([["=SUM("+int_to_column(x+2)+"$3:"+int_to_column(x+2)+String(max_y)+")"], ["Просмотров"]]).setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+
+        spreadsheet.getRange(int_to_column(x+5)+'1').activate();
+        spreadsheet.getActiveRangeList().setNumberFormat('0');
+        
+
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+5)+'3'+":"+int_to_column(x+5)+'4').setFontWeight('bold').setBackground('yellow').setValues([["=SUM("+int_to_column(x+3)+"$3:"+int_to_column(x+3)+String(max_y)+")"], ["Лайков"]]).setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+
+        spreadsheet.getRange(int_to_column(x+5)+'3').activate();
+        spreadsheet.getActiveRangeList().setNumberFormat('0');
+
+        if (viewsOnThousand)
+          for(var y=3; y<=max_y; y++){
+            spreadsheet.getActiveSheet().getRange(y, 3).setValue(spreadsheet.getActiveSheet().getRange(y, 3).getValue()/1000.0);
+            spreadsheet.getActiveSheet().getRange(y, 1).setValue(spreadsheet.getActiveSheet().getRange(y, 1).getValue().toString().substring(0, 10));
+          }
+
+        spreadsheet.getActiveSheet().autoResizeColumns(x+1, 6);
+        spreadsheet.getActiveSheet().setColumnWidth(x+5, spreadsheet.getActiveSheet().getColumnWidth(x+5)+15);
+        //Title set
+        spreadsheet.getRange(int_to_column(x)+'1:'+int_to_column(x+4)+'1').activate().mergeAcross().setFontWeight('normal');
+        spreadsheet.getCurrentCell().setValue(name+" "+data);
+        spreadsheet.getActiveRangeList().setHorizontalAlignment('center').setBackground('#d9ead3').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID);
+  }else{
+
+        spreadsheet.getRange('D3').activate();
+        spreadsheet.getCurrentCell().setValue('1');
+        spreadsheet.getRange('D4').activate();
+        spreadsheet.getCurrentCell().setFormula('=D3+1');
+        spreadsheet.getRange('D5:D'+max_y).activate();
+        spreadsheet.getRange('D4').copyTo(spreadsheet.getActiveRange(), SpreadsheetApp.CopyPasteType.PASTE_NORMAL, false);
+
+        spreadsheet.getActiveSheet().autoResizeColumns(x, 5);
+        spreadsheet.getActiveSheet().setColumnWidth(x, spreadsheet.getActiveSheet().getColumnWidth(x)+15);
+        //Headers set
+        spreadsheet.getActiveSheet().getRange(int_to_column(x)+'2:'+int_to_column(x+4)+'2').activate().setValues(header_DLVC).setBorder(true, true, true, true, true, true,'#000000', SpreadsheetApp.BorderStyle.SOLID);;
+        spreadsheet.getActiveRangeList().setHorizontalAlignment('center').setBackground('#c9daf8').setFontWeight('bold');
+        //Data Column formating
+        spreadsheet.getActiveSheet().getRange(int_to_column(x)+'3'+':'+int_to_column(x)+String(max_y)).setBackground('#efefef').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+1)+'3'+':'+int_to_column(x+1)+String(max_y)).setBackground('#f3f3f3').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID);
+
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+2)+'3'+':'+int_to_column(x+2)+String(max_y)).setBackground('#efefef').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+3)+'3'+':'+int_to_column(x+3)+String(max_y)).setBackground('#f3f3f3').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+        //Sum
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+4)+'1'+":"+int_to_column(x+4)+'2').setFontWeight('bold').setBackground('yellow').setValues([["=SUM("+int_to_column(x+2)+"$3:"+int_to_column(x+2)+String(max_y)+")"], ["ИТОГО"]]).setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+
+        spreadsheet.getRange(int_to_column(x+4)+'1').activate();
+        spreadsheet.getActiveRangeList().setNumberFormat('0');
+
+        if (viewsOnThousand)
+          for(var y=3; y<=max_y; y++){
+            spreadsheet.getActiveSheet().getRange(y, 3).setValue(spreadsheet.getActiveSheet().getRange(y, 3).getValue()/1000.0);
+            //spreadsheet.getActiveSheet().getRange(y, 1).setValue(spreadsheet.getActiveSheet().getRange(y, 1).getValue().toString().substring(0, 10));
+            var stri=spreadsheet.getActiveSheet().getRange(y, 1).getValue().toString();
+            var year=stri.substring(0, 4);
+            var month=stri.substring(5, 7);
+            var day=stri.substring(8, 10);
+            spreadsheet.getActiveSheet().getRange(y, 1).setValue(year+" "+month+" "+day);
+          }
+
+        spreadsheet.getActiveSheet().autoResizeColumns(x+1, 5);
+        spreadsheet.getActiveSheet().setColumnWidth(x+4, spreadsheet.getActiveSheet().getColumnWidth(x+4)+15);
+        //Title set
+        spreadsheet.getRange(int_to_column(x)+'1:'+int_to_column(x+3)+'1').activate().mergeAcross().setFontWeight('normal');
+        spreadsheet.getCurrentCell().setValue(name+" "+data);
+        spreadsheet.getActiveRangeList().setHorizontalAlignment('center').setBackground('#d9ead3').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID);
+        spreadsheet.getActiveSheet().autoResizeColumns(x, 6);
+        
+  }
+}
+
+function MotFormat(name, x){
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var She=spreadsheet.getSheetByName(name);
+  spreadsheet.setActiveSheet(She, true);
+  She.setFrozenRows(1);
+  var header_DLVC=[["DATE", "PUBLICATION LINK",	"VIEWS"]];
+  var max_y=0;
+  for (var max_y=3; spreadsheet.getActiveSheet().getRange(int_to_column(x)+String(max_y)).getValue()!=""; max_y++);
+  max_y--;
+  /*spreadsheet.getRange('D3').activate();
+        spreadsheet.getCurrentCell().setValue('1');
+        spreadsheet.getRange('D4').activate();
+        spreadsheet.getCurrentCell().setFormula('=D3+1');
+        spreadsheet.getRange('D5:D'+max_y).activate();
+        spreadsheet.getRange('D4').copyTo(spreadsheet.getActiveRange(), SpreadsheetApp.CopyPasteType.PASTE_NORMAL, false);
+*/
+        spreadsheet.getActiveSheet().autoResizeColumns(x, 4);
+        spreadsheet.getActiveSheet().setColumnWidth(x, spreadsheet.getActiveSheet().getColumnWidth(x)+15);
+        //Headers set
+        spreadsheet.getActiveSheet().getRange(int_to_column(x)+'1:'+int_to_column(x+2)+'1').activate().setValues(header_DLVC)
+        ;//.setBorder(true, true, true, true, true, true,'#000000', SpreadsheetApp.BorderStyle.SOLID);;
+        spreadsheet.getActiveRangeList().setHorizontalAlignment('center').setBackground('#00ff00').setFontWeight('bold');
+        //Data Column formating
+        spreadsheet.getActiveSheet().getRange(int_to_column(x)+'2'+':'+int_to_column(x)+String(max_y)).setHorizontalAlignment('center');
+        //.setBackground('#efefef').setBorder(true, true, true, true, null, null,'#000000', ////SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+
+        //spreadsheet.getActiveSheet().getRange(int_to_column(x+1)+'3'+':'+int_to_column(x+1)+String(max_y)).setBackground('#f3f3f3').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID);
+
+        //spreadsheet.getActiveSheet().getRange(int_to_column(x+2)+'3'+':'+int_to_column(x+2)+String(max_y)).setBackground('#efefef').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+2)+'2'+':'+int_to_column(x+2)+String(max_y)).setHorizontalAlignment('center');
+        //.setBackground('#f3f3f3').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+        //Sum
+        spreadsheet.getActiveSheet().getRange(int_to_column(x+3)+'2'+":"+int_to_column(x+3)+'3').setFontWeight('bold').setBackground('yellow').setValues([["=SUM("+int_to_column(x+2)+"$2:"+int_to_column(x+2)+String(max_y)+")"], ["ИТОГО"]]).setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID).setHorizontalAlignment('center');
+
+        spreadsheet.getRange(int_to_column(x+3)+'2').activate();
+        spreadsheet.getActiveRangeList().setNumberFormat('0');
+
+        for(var y=2; y<=max_y; y++){
+          var time=spreadsheet.getActiveSheet().getRange(y, 1).getValue().toString();
+          if (time.length>10){
+            spreadsheet.getActiveSheet().getRange(y, 1).setValue(time.substring(0, 10));
+          }
+          else break;
+        }
+          //makeToLink(spreadsheet, 'B'+y);
+        spreadsheet.getActiveSheet().autoResizeColumns(x+1, 4);
+        spreadsheet.getActiveSheet().setColumnWidth(x+3, spreadsheet.getActiveSheet().getColumnWidth(x+3)+15);
+        //Title set
+        //spreadsheet.getRange(int_to_column(x)+'1:'+int_to_column(x+3)+'1').activate().mergeAcross().setFontWeight('normal');
+        //spreadsheet.getCurrentCell().setValue(name+" "+data);
+        //spreadsheet.getActiveRangeList().setHorizontalAlignment('center').setBackground('#d9ead3').setBorder(true, true, true, true, null, null,'#000000', SpreadsheetApp.BorderStyle.SOLID);
+        spreadsheet.getActiveSheet().autoResizeColumns(x, 5);
+}
+
+
+
+function myFunction1() {
+  var spreadsheet = SpreadsheetApp.getActive();
+  for (var i=0; i<spreadsheet.getSheets().length-1;){
+    //break;
+    var She=spreadsheet.getSheets()[i];
+    console.log(i+" "+She.getName()+"\n");
+      spreadsheet.setActiveSheet(She, true);
+      //She.getRange("A"+3+':D'+She.getLastRow()).copyValuesToRange(spreadsheet.getActiveSheet(), 1, 4, 3, She.getLastRow());
+        var x=1;
+          format(She.getName(), x, false);
+        
+        ++i;
+    
+  }
+  
+  var i=spreadsheet.getSheets().length-1;
+  var She=spreadsheet.getSheets()[i];
+    console.log(i+" "+She.getName()+"\n");
+      spreadsheet.setActiveSheet(She, true);
+      //She.getRange("A"+3+':D'+She.getLastRow()).copyValuesToRange(spreadsheet.getActiveSheet(), 1, 4, 3, She.getLastRow());
+        var x=1;
+          format(She.getName(), x, false);
+        
+        ++i;
+    
+};
+
+function myFunction2() {
+  var spreadsheet = SpreadsheetApp.getActive();
+  var start_ind = PropertiesService.getScriptProperties().getProperty("start_ind");
+  if (!start_ind){
+    start_ind=20;
+  }else{
+    start_ind=parseInt(start_ind);
+  }
+
+  for (var i=start_ind; i<=start_ind && i<spreadsheet.getSheets().length;){
+    var She=spreadsheet.getSheets()[i];
+    console.log(i+" "+She.getName()+"\n");
+      spreadsheet.setActiveSheet(She, true);
+      //She.getRange("A"+3+':D'+She.getLastRow()).copyValuesToRange(spreadsheet.getActiveSheet(), 1, 4, 3, She.getLastRow());
+        var x=1;
+          //spreadsheet.getRange(int_to_column(x)+'1:'+int_to_column(x+3)+'1').activate().mergeAcross().setFontWeight('normal');
+        //spreadsheet.getCurrentCell().setValue(She.getName()+" 11.07-06.08");
+          format(She.getName(), x, false, "11.09-17.09", true);
+        
+        ++i;
+    
+  }
+  PropertiesService.getScriptProperties().setProperty("start_ind", start_ind+1);
+  if (start_ind+1 < spreadsheet.getSheets().length)
+    ScriptApp.newTrigger('myFunction2').timeBased().after(1).create();
+  else
+    PropertiesService.getScriptProperties().deleteProperty("start_ind");
+};
+
+
+
+function NEw() {
+  var spreadsheet = SpreadsheetApp.getActive();
+  for (var i=0; i<spreadsheet.getSheets().length;){
+    var She=spreadsheet.getSheets()[i];
+    console.log(i+" "+She.getName()+"\n");
+      spreadsheet.setActiveSheet(She, true);
+        var x=1;
+          new_format(She.getName());
+        
+        ++i;
+    
+  }
+};
+
+function raw() {
+  var spreadsheet = SpreadsheetApp.getActive();
+  for (var i=0; i<spreadsheet.getSheets().length;){
+    var She=spreadsheet.getSheets()[i];
+    console.log(i+" "+She.getName()+"\n");
+      spreadsheet.setActiveSheet(She, true);
+        var x=1;
+          new_format(She.getName(), true);
+        
+        ++i;
+    
+  }
+};
