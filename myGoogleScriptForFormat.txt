@@ -13,68 +13,6 @@ function int_to_column(i){
   return ans;
 }
 
-function myFunction() {
-  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  for (var i=0; i<20; ++i){
-    var ROMAN=spreadsheet.getSheets()[i];
-    var MY=spreadsheet.getSheets()[i+20];
-    for (var row=3; row<=ROMAN.getLastRow(); ++row){
-      if (String(ROMAN.getRange(row, 1).getValue()) == String(MY.getRange(row, 1).getValue())){
-        if (Number(ROMAN.getRange(row, 3).getValue())>Number(MY.getRange(row, 3).getValue())){
-          Logger.log(row+". "+ROMAN.getName()+": ERROR IN VIEWS\n"+ROMAN.getRange(row, 3).getValue()+" "+MY.getRange(row, 3).getValue()+"\n\n");
-          //break;
-        }
-      }
-    }
-    Logger.log(i+" "+ROMAN.getName()+"\n");
-  }
-  return;
-  for (var i=0; i<spreadsheet.getSheets().length;){
-    var She=spreadsheet.getSheetByName(arr_DLVLC[i]);
-    var She2=spreadsheet.getSheetByName(arr_DLVLC[i]+" (1)");
-    if (She!=null && She2!=null){
-      spreadsheet.setActiveSheet(She, true);
-      spreadsheet.getActiveSheet().getRange('A:'+int_to_column(She.getLastColumn())). //откуда вырезать
-          moveTo(spreadsheet.getRange("H1"));
-
-      She2.getRange("A"+3+':D'+She2.getLastRow()).copyValuesToRange(spreadsheet.getActiveSheet(), 1, 4, 3, She2.getLastRow());
-        var x=1;
-          format(arr_DLVLC[i], x, true);
-          if (spreadsheet.getActiveSheet().getRange(int_to_column(x+7)+'3').getValue()=="" || spreadsheet.getActiveSheet().getRange(int_to_column(x+7)+'3').getValue()=="\"\"") 
-            break;
-          x+=7;
-        
-        ++i;
-    }
-  }
-  for (var i=0; i<arr_DLVLC.length; i++){
-    spreadsheet.deleteSheet(spreadsheet.getSheetByName(arr_DLVLC[i]+ " (1)"));
-  }
-
-  for (var i=0; i<arr_DLVC.length;){
-    var She=spreadsheet.getSheetByName(arr_DLVC[i]);
-    var She2=spreadsheet.getSheetByName(arr_DLVC[i]+" (1)");
-    if (She!=null && She2!=null){
-      spreadsheet.setActiveSheet(She, true);
-
-      spreadsheet.getActiveSheet().getRange('A:'+int_to_column(She.getLastColumn())). //откуда вырезать
-          moveTo(spreadsheet.getRange("G1"));
-      She2.getRange("A"+3+':C'+She2.getLastRow()).copyValuesToRange(spreadsheet.getActiveSheet(), 1, 3, 3, She2.getLastRow());
-
-        var x=1;
-          format(arr_DLVC[i], x, false);
-          if (spreadsheet.getActiveSheet().getRange(int_to_column(x+6)+'3').getValue()=="" || spreadsheet.getActiveSheet().getRange(int_to_column(x+6)+'3').getValue()=="\"\"") 
-            break;
-          x+=6;
-        ++i;
-    }
-  }
-  for (var i=0; i<arr_DLVC.length; i++){
-    spreadsheet.deleteSheet(spreadsheet.getSheetByName(arr_DLVC[i]+ " (1)"));
-  }
-
-};
-
 function new_format(name, is_raw=false, data="16.09-15.10"){
   var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   var She=spreadsheet.getSheetByName(name);
