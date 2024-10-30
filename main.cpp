@@ -696,7 +696,7 @@ int main(int argc, char** argv){
         }
         time_t max_time=0;
         string now_record_parent;
-        unsigned int currentLine=2;
+        unsigned int currentLine=3;
         while(true){
             if (now_lines.size())
                 now_record_parent=now_lines.begin()->first;
