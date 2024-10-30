@@ -296,6 +296,8 @@ int main(int argc, char** argv){
     ifstream accounts("parsing_acc.txt");
     string temp;
     vector<string> username={};
+    ofstream bad_acc("bad_acc.txt");
+    bad_acc.close();
     std::string fmt;
     while (!accounts.eof()){
         getline(accounts, temp);
@@ -507,8 +509,20 @@ int main(int argc, char** argv){
             get_id << "\n\n" << buffer->str();
             get_id.close();
     #endif
-            if (!InstagramUtils::ExtractId_ParsingAcc(buffer, id)){
-                cout << now << " - error get_id. Skiped...\n";
+            string reason;
+            if (!InstagramUtils::ExtractId_ParsingAcc(buffer, id, reason)){
+                if (reason==""){
+                    cout << now << " - error get_id. Skiped...\n";
+                    bad_acc.open("bad_acc.txt", ios::app);
+                    bad_acc << "\n" << now << " - Not Found\n";
+                    bad_acc.close();
+                }else{
+                    cout << now << " - error. Reason: " << reason << "\nSkiped...\n";
+                    bad_acc.open("bad_acc.txt", ios::app);
+                    bad_acc << "\n" << now << " - " << reason << "\n";
+                    bad_acc.close();
+                    reason="";
+                }
                 continue;
             }
             while(res < 2){

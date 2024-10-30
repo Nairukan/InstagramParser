@@ -86,8 +86,11 @@ if(WIN32)
 
     # Переменная для хранения всех .dll файлов
     set(ALL_DLL_FILES "")
-    list(APPEND ALL_DLL_FILES ${NetworkRequestLib_DLL} ${ExelWorkLib_DLL})
-
+    if (CMAKE_BUILD_TYPE STREQUAL "Release")
+        list(APPEND ALL_DLL_FILES ${NetworkRequestLib_DLL_RELEASE} ${ExelWorkLib_DLL_RELEASE})
+    else()
+        list(APPEND ALL_DLL_FILES ${NetworkRequestLib_DLL_DEBUG} ${ExelWorkLib_DLL_DEBUG})
+    endif()
     # Проходим по каждой директории из списка
     #[[
     foreach(DLL_DIR ${DLL_DIRS})

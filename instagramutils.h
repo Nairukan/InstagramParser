@@ -147,11 +147,23 @@ public:
 
 
 
-    static bool ExtractId_ParsingAcc(std::stringstream *buffer, std::string& id){
+    static bool ExtractId_ParsingAcc(std::stringstream *buffer, std::string& id, std::string& lock_reason){
         json data = json::parse(*buffer);
         if (data["status"]!="ok") return false;
         try{
             id=data["data"]["user"]["id"];
+            bool is_private=data["data"]["user"]["is_private"];
+            if (is_private){
+                bool is_follow_viewers=data["data"]["user"]["follows_viewer"];
+                if (!is_follow_viewers){
+                    if (data["data"]["user"]["requested_by_viewer"]==true)
+                        lock_reason="Account is private, you sended requiest for join, but founder don't claim your request yet";
+                    else
+                        lock_reason="Account is private, please send requiest for join and repit at founder claim your request";
+                    return false;
+                }
+
+            }
             return true;
         }catch(...){
             return false;
